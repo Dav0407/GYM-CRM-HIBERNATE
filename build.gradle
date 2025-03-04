@@ -19,6 +19,9 @@ dependencies {
     // Hibernate
     implementation 'org.hibernate:hibernate-core-jakarta:5.6.5.Final'
 
+    // Postgres
+    implementation 'org.postgresql:postgresql:42.7.4'
+
     // Jakarta Annotation API
     implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
 
