@@ -48,3 +48,6 @@ bin/
 /.idea/misc.xml
 
 /gradle
+/.idea/dataSources.xml
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/vcs.xml
