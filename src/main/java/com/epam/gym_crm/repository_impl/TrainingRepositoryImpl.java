@@ -20,14 +20,14 @@ public class TrainingRepositoryImpl implements TrainingRepository {
 
     @Transactional
     @Override
-    public Optional<Training> save(Training training) {
+    public Training save(Training training) {
         try {
             if (training.getId() == null) {
                 entityManager.persist(training);
             } else {
                 training = entityManager.merge(training);
             }
-            return Optional.of(training);
+            return training;
         } catch (Exception e) {
             throw new RuntimeException("Failed to save Training: " + training, e);
         }

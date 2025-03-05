@@ -18,14 +18,14 @@ public class TrainingTypeRepositoryImpl implements TrainingTypeRepository {
 
     @Transactional
     @Override
-    public Optional<TrainingType> save(TrainingType trainingType) {
+    public TrainingType save(TrainingType trainingType) {
         try {
             if (trainingType.getId() == null) {
                 entityManager.persist(trainingType);
             } else {
                 trainingType = entityManager.merge(trainingType);
             }
-            return Optional.of(trainingType);
+            return trainingType;
         } catch (Exception e) {
             throw new RuntimeException("Failed to save TrainingType: " + trainingType, e);
         }

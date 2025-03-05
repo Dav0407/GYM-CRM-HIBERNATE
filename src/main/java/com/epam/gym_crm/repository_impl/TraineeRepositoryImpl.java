@@ -17,13 +17,13 @@ public class TraineeRepositoryImpl implements TraineeRepository {
 
     @Transactional
     @Override
-    public Optional<Trainee> save(Trainee trainee) {
+    public Trainee save(Trainee trainee) {
         try {
             if (trainee.getId() == null || !entityManager.contains(trainee)) {
                 entityManager.persist(trainee);
-                return Optional.of(trainee);
+                return trainee;
             } else {
-                return Optional.of(entityManager.merge(trainee));
+                return entityManager.merge(trainee);
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to save trainee: " + trainee, e);
@@ -35,4 +35,13 @@ public class TraineeRepositoryImpl implements TraineeRepository {
         Trainee trainee = entityManager.find(Trainee.class, id);
         return Optional.ofNullable(trainee);
     }
+
+    @Override
+    public Optional<Trainee> findByUserId(Long userId) {
+        return entityManager.createQuery("SELECT t FROM Trainee t WHERE t.user.id = :userId", Trainee.class)
+                .setParameter("userId", userId)
+                .getResultStream()
+                .findFirst();
+    }
+
 }

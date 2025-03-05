@@ -1,6 +1,7 @@
 package com.epam.gym_crm.service_impl;
 
 import com.epam.gym_crm.dto.CreateTraineeProfileRequestDTO;
+import com.epam.gym_crm.dto.UpdateTraineeProfileRequestDTO;
 import com.epam.gym_crm.entity.Trainee;
 import com.epam.gym_crm.entity.User;
 import com.epam.gym_crm.repository.TraineeRepository;
@@ -47,8 +48,7 @@ public class TraineeServiceImpl implements TraineeService {
                 .user(user)
                 .build();
 
-        Trainee savedTrainee = traineeRepository.save(trainee)
-                .orElseThrow(() -> new RuntimeException("Failed to save trainee"));
+        Trainee savedTrainee = traineeRepository.save(trainee);
 
         LOG.info("Trainee profile created successfully: " + savedTrainee.getId());
         return savedTrainee;
@@ -59,6 +59,42 @@ public class TraineeServiceImpl implements TraineeService {
         LOG.info("Fetching trainee by ID: " + id);
         return traineeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Trainee not found with ID: " + id));
+    }
+
+    @Override
+    public Trainee getTraineeByUsername(String username) {
+        User userByUsername = userService.getUserByUsername(username);
+        return traineeRepository.findByUserId(userByUsername.getId())
+                .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + userByUsername.getUsername()));
+    }
+
+    @Override
+    public void changePassword(String username, String oldPassword, String newPassword) {
+        userService.changePassword(username, oldPassword, newPassword);
+    }
+
+    @Override
+    public Trainee updateTraineeProfile(Long id, UpdateTraineeProfileRequestDTO request) {
+
+        Trainee trainee = traineeRepository.findById(id).orElseThrow(() -> new RuntimeException("Trainee not found with ID: " + id));
+
+        trainee.getUser().setFirstName(request.getFirstName().trim());
+        trainee.getUser().setLastName(request.getLastName().trim());
+        trainee.getUser().setUsername(request.getUsername().trim());
+
+        trainee.setDateOfBirth(request.getDateOfBirth());
+        trainee.setAddress(request.getAddress().trim());
+        return traineeRepository.save(trainee);
+    }
+
+    @Override
+    public void updateStatus(String username) {
+        userService.updateStatus(username);
+    }
+
+    @Override
+    public void deleteTraineeProfileByUsername(String username) {
+        userService.deleteUser(username);
     }
 
     private void validateRequest(CreateTraineeProfileRequestDTO request) {

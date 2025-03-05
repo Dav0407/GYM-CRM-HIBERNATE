@@ -42,6 +42,9 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 
+    // AssertJ (optional but recommended)
+    testImplementation 'org.assertj:assertj-core:3.24.2'
+
     // Mockito
     testImplementation 'org.mockito:mockito-junit-jupiter:5.14.2'
 }

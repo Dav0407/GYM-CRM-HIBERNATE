@@ -13,10 +13,9 @@ import java.util.Date;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateTraineeProfileRequestDTO {
-    private String firstName;
-    private String lastName;
-    private String username;
-    private Date dateOfBirth;
-    private String address;
+public class GetTrainerTrainingsRequestDTO {
+    private String TrainerUsername;
+    private String TraineeUsername;
+    private Date from;
+    private Date to;
 }

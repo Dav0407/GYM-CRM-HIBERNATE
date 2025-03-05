@@ -18,13 +18,13 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Transactional
     @Override
-    public Optional<User> save(User user) {
+    public User save(User user) {
         try {
             if (user.getId() == null || !entityManager.contains(user)) {
                 entityManager.persist(user);
-                return Optional.of(user);
+                return user;
             } else {
-                return Optional.of(entityManager.merge(user));
+                return entityManager.merge(user);
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to save user: " + user, e);

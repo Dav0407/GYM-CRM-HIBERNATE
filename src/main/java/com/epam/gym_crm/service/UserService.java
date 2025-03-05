@@ -8,6 +8,7 @@ public interface UserService {
     String generateRandomPassword();
 
     User saveUser(User user);
+
     boolean checkUsernameExists(String username);
 
     boolean isPasswordValid(String username, String password);
@@ -17,4 +18,6 @@ public interface UserService {
     void updateStatus(String username);
 
     void deleteUser(String username);
+
+    User getUserByUsername(String username);
 }

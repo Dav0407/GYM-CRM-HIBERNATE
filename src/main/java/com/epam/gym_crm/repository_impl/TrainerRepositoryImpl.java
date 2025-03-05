@@ -1,10 +1,8 @@
 package com.epam.gym_crm.repository_impl;
 
 import com.epam.gym_crm.entity.Trainer;
-import com.epam.gym_crm.entity.TrainingType;
 import com.epam.gym_crm.repository.TrainerRepository;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.NoResultException;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Repository;
@@ -20,14 +18,14 @@ public class TrainerRepositoryImpl implements TrainerRepository {
 
     @Transactional
     @Override
-    public Optional<Trainer> save(Trainer trainer) {
+    public Trainer save(Trainer trainer) {
         try {
             if (trainer.getId() == null) {
                 entityManager.persist(trainer);
             } else {
                 trainer = entityManager.merge(trainer);
             }
-            return Optional.of(trainer);
+            return trainer;
         } catch (Exception e) {
             throw new RuntimeException("Failed to save Trainer: " + trainer, e);
         }
@@ -42,6 +40,23 @@ public class TrainerRepositoryImpl implements TrainerRepository {
     @Override
     public List<Trainer> findAll() {
         return entityManager.createQuery("SELECT t FROM Trainer t", Trainer.class)
+                .getResultList();
+    }
+
+    @Override
+    public Optional<Trainer> findByUserId(Long userId) {
+        return entityManager.createQuery("SELECT t FROM Trainer t WHERE t.user.id = :userId", Trainer.class)
+                .setParameter("userId", userId)
+                .getResultStream().findFirst();
+    }
+
+    @Override
+    public List<Trainer> findUnassignedTrainersByTraineeUsername(String traineeUsername) {
+        return entityManager.createQuery(
+                        "SELECT t FROM Trainer t WHERE t NOT IN " +
+                                "(SELECT tt.trainer FROM TraineeTrainer tt WHERE tt.trainee.user.username = :traineeUsername)",
+                        Trainer.class)
+                .setParameter("traineeUsername", traineeUsername)
                 .getResultList();
     }
 }

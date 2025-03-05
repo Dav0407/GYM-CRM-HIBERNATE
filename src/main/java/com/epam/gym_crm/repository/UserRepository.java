@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository {
-    Optional<User> save(User user);
+    User save(User user);
     Optional<User> findById(Long id);
     Optional<User> findByUsername(String username);
     void deleteByUsername(String username);

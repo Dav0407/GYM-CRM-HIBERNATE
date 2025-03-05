@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TrainingRepository {
-    Optional<Training> save(Training training);
+    Training save(Training training);
     Optional<Training> findById(Long id);
     List<Training> findAllTraineeTrainings(String traineeUsername, String trainerUsername, Date from, Date to, String trainingTypeName);
     List<Training> findAllTrainerTrainings(String trainerUsername, String traineeUsername, Date from, Date to);

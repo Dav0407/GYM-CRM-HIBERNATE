@@ -25,7 +25,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User saveUser(User user) {
         LOG.info("Saving user: " + user.getUsername());
-        return userRepository.save(user).orElseThrow(() -> new RuntimeException("User not saved"));
+        return userRepository.save(user);
     }
 
     @Override
@@ -122,6 +122,8 @@ public class UserServiceImpl implements UserService {
         });
     }
 
-
-
+    @Override
+    public User getUserByUsername(String username) {
+        return userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found."));
+    }
 }
