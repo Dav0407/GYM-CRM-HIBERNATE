@@ -19,7 +19,7 @@ public class TraineeRepositoryImpl implements TraineeRepository {
     @Override
     public Trainee save(Trainee trainee) {
         try {
-            if (trainee.getId() == null || !entityManager.contains(trainee)) {
+            if (trainee.getId() == null) {
                 entityManager.persist(trainee);
                 return trainee;
             } else {

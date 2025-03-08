@@ -20,7 +20,7 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public User save(User user) {
         try {
-            if (user.getId() == null || !entityManager.contains(user)) {
+            if (user.getId() == null) {
                 entityManager.persist(user);
                 return user;
             } else {

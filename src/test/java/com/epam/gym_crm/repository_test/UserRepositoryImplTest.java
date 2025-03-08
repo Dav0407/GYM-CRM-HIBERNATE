@@ -1,34 +1,22 @@
-package com.epam.gym_crm.repository_impl;
+package com.epam.gym_crm.repository_test;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import com.epam.gym_crm.entity.User;
+import com.epam.gym_crm.repository_impl.UserRepositoryImpl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class UserRepositoryImplTest {
@@ -41,9 +29,6 @@ public class UserRepositoryImplTest {
 
     @InjectMocks
     private UserRepositoryImpl userRepository;
-
-    @Captor
-    private ArgumentCaptor<User> userCaptor;
 
     private User user;
 
@@ -61,7 +46,6 @@ public class UserRepositoryImplTest {
         User newUser = new User();
         newUser.setUsername("newUser");
         newUser.setPassword("newPassword");
-        // No ID
 
         // Act
         User result = userRepository.save(newUser);
@@ -73,47 +57,35 @@ public class UserRepositoryImplTest {
     }
 
     @Test
-    public void testSave_ExistingUserNotContained_ShouldPersist() {
+    public void testSave_ExistingUser_ShouldMerge() {
         // Arrange
-        when(entityManager.contains(user)).thenReturn(false);
+        when(entityManager.merge(user)).thenReturn(user);
 
         // Act
         User result = userRepository.save(user);
 
         // Assert
-        verify(entityManager).persist(user);
-        verify(entityManager, never()).merge(any(User.class));
-        assertSame(user, result);
-    }
-
-    @Test
-    public void testSave_ExistingUserContained_ShouldMerge() {
-        // Arrange
-        User updatedUser = new User();
-        updatedUser.setId(1L);
-        updatedUser.setUsername("updatedUser");
-        when(entityManager.contains(updatedUser)).thenReturn(true);
-        when(entityManager.merge(updatedUser)).thenReturn(updatedUser);
-
-        // Act
-        User result = userRepository.save(updatedUser);
-
-        // Assert
+        verify(entityManager).merge(user);
         verify(entityManager, never()).persist(any(User.class));
-        verify(entityManager).merge(updatedUser);
-        assertSame(updatedUser, result);
+        assertSame(user, result);
     }
 
     @Test
     public void testSave_PersistException_ShouldThrowRuntimeException() {
         // Arrange
+        User newUser = new User();
+        newUser.setUsername("newUser");
+        newUser.setPassword("newPassword");
+
+        // Mock entityManager.persist() to throw an exception
         doThrow(new RuntimeException("Database error")).when(entityManager).persist(any(User.class));
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userRepository.save(user);
+            userRepository.save(newUser);
         });
 
+        // Verify the exception message
         assertTrue(exception.getMessage().contains("Failed to save user"));
     }
 
@@ -216,7 +188,7 @@ public class UserRepositoryImplTest {
         user2.setId(2L);
         user2.setUsername("testUser2");
 
-        List<User> userList = Arrays.asList(user, user2);
+        List<User> userList = List.of(user, user2);
 
         when(entityManager.createQuery("SELECT u FROM User u", User.class)).thenReturn(typedQuery);
         when(typedQuery.getResultList()).thenReturn(userList);

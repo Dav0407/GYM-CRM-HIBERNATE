@@ -12,21 +12,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class TraineeRepositoryImplTest {
@@ -51,56 +45,57 @@ public class TraineeRepositoryImplTest {
         user.setLastName("Doe");
 
         trainee = new Trainee();
+        trainee.setId(1L);
         trainee.setUser(user);
     }
 
     @Test
-    public void testSaveExistingTrainee() {
+    public void testSave_NewTrainee_ShouldPersist() {
         // Arrange
-        trainee.setId(1L);
-        when(entityManager.contains(trainee)).thenReturn(true);
+        Trainee newTrainee = new Trainee();
+        newTrainee.setUser(user);
+
+        // Act
+        Trainee savedTrainee = traineeRepository.save(newTrainee);
+
+        // Assert
+        verify(entityManager).persist(newTrainee);
+        verify(entityManager, never()).merge(any(Trainee.class));
+        assertSame(newTrainee, savedTrainee);
+    }
+
+    @Test
+    public void testSave_ExistingTrainee_ShouldMerge() {
+        // Arrange
         when(entityManager.merge(trainee)).thenReturn(trainee);
 
         // Act
         Trainee savedTrainee = traineeRepository.save(trainee);
 
         // Assert
+        verify(entityManager).merge(trainee);
         verify(entityManager, never()).persist(any(Trainee.class));
-        verify(entityManager, times(1)).merge(trainee);
-        assertEquals(trainee, savedTrainee);
+        assertSame(trainee, savedTrainee);
     }
 
     @Test
-    public void testSaveExistingTraineeNotContainedInEntityManager() {
+    public void testSave_PersistException_ShouldThrowRuntimeException() {
         // Arrange
-        trainee.setId(1L);
-        when(entityManager.contains(trainee)).thenReturn(false);
+        Trainee newTrainee = new Trainee();
+        newTrainee.setUser(user);
 
-        // Act
-        Trainee savedTrainee = traineeRepository.save(trainee);
-
-        // Assert
-        verify(entityManager, times(1)).persist(trainee);
-        verify(entityManager, never()).merge(any(Trainee.class));
-        assertEquals(trainee, savedTrainee);
-    }
-
-    @Test
-    public void testSaveWithException() {
-        // Arrange
-        trainee.setId(null);
         doThrow(new RuntimeException("Database error")).when(entityManager).persist(any(Trainee.class));
 
         // Act & Assert
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            traineeRepository.save(trainee);
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            traineeRepository.save(newTrainee);
         });
 
         assertTrue(exception.getMessage().contains("Failed to save trainee"));
     }
 
     @Test
-    public void testFindByIdWhenTraineeExists() {
+    public void testFindById_ExistingTrainee_ShouldReturnTrainee() {
         // Arrange
         Long traineeId = 1L;
         when(entityManager.find(Trainee.class, traineeId)).thenReturn(trainee);
@@ -114,24 +109,23 @@ public class TraineeRepositoryImplTest {
     }
 
     @Test
-    public void testFindByIdWhenTraineeDoesNotExist() {
+    public void testFindById_NonExistingTrainee_ShouldReturnEmptyOptional() {
         // Arrange
-        Long traineeId = 1L;
+        Long traineeId = 999L;
         when(entityManager.find(Trainee.class, traineeId)).thenReturn(null);
 
         // Act
         Optional<Trainee> result = traineeRepository.findById(traineeId);
 
         // Assert
-        assertTrue(result.isEmpty());
+        assertFalse(result.isPresent());
     }
 
     @Test
-    public void testFindByUserIdWhenTraineeExists() {
+    public void testFindByUserId_ExistingTrainee_ShouldReturnTrainee() {
         // Arrange
         Long userId = 1L;
-        List<Trainee> traineeList = new ArrayList<>();
-        traineeList.add(trainee);
+        List<Trainee> traineeList = Collections.singletonList(trainee);
 
         when(entityManager.createQuery(anyString(), eq(Trainee.class))).thenReturn(query);
         when(query.setParameter("userId", userId)).thenReturn(query);
@@ -146,10 +140,10 @@ public class TraineeRepositoryImplTest {
     }
 
     @Test
-    public void testFindByUserIdWhenTraineeDoesNotExist() {
+    public void testFindByUserId_NonExistingTrainee_ShouldReturnEmptyOptional() {
         // Arrange
         Long userId = 1L;
-        List<Trainee> emptyList = new ArrayList<>();
+        List<Trainee> emptyList = Collections.emptyList();
 
         when(entityManager.createQuery(anyString(), eq(Trainee.class))).thenReturn(query);
         when(query.setParameter("userId", userId)).thenReturn(query);
@@ -159,6 +153,6 @@ public class TraineeRepositoryImplTest {
         Optional<Trainee> result = traineeRepository.findByUserId(userId);
 
         // Assert
-        assertTrue(result.isEmpty());
+        assertFalse(result.isPresent());
     }
 }
