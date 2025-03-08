@@ -4,7 +4,7 @@ import com.epam.gym_crm.entity.Trainer;
 import com.epam.gym_crm.repository.TrainerRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -47,7 +47,7 @@ public class TrainerRepositoryImpl implements TrainerRepository {
     public Optional<Trainer> findByUserId(Long userId) {
         return entityManager.createQuery("SELECT t FROM Trainer t WHERE t.user.id = :userId", Trainer.class)
                 .setParameter("userId", userId)
-                .getResultStream().findFirst();
+                .getResultList().stream().findFirst();
     }
 
     @Override

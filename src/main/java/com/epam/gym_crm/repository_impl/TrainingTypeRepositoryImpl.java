@@ -5,7 +5,7 @@ import com.epam.gym_crm.repository.TrainingTypeRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.PersistenceContext;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -41,8 +41,8 @@ public class TrainingTypeRepositoryImpl implements TrainingTypeRepository {
     public Optional<TrainingType> findByValue(String trainingType) {
         try {
             TrainingType result = entityManager.createQuery(
-                            "SELECT t FROM TrainingType t WHERE t.trainingTypeName = :trainingType", TrainingType.class)
-                    .setParameter("trainingType", trainingType)
+                            "SELECT t FROM TrainingType t WHERE LOWER(t.trainingTypeName) = LOWER(:trainingType)", TrainingType.class)
+                    .setParameter("trainingType", trainingType.toLowerCase())
                     .getSingleResult();
 
             return Optional.ofNullable(result);
@@ -50,5 +50,6 @@ public class TrainingTypeRepositoryImpl implements TrainingTypeRepository {
             return Optional.empty();
         }
     }
+
 }
 

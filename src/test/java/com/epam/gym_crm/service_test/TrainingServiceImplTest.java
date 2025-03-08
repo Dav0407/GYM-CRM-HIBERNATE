@@ -4,40 +4,51 @@ import com.epam.gym_crm.dto.AddTrainingRequestDTO;
 import com.epam.gym_crm.dto.GetTraineeTrainingsRequestDTO;
 import com.epam.gym_crm.dto.GetTrainerTrainingsRequestDTO;
 import com.epam.gym_crm.entity.Trainee;
-import com.epam.gym_crm.entity.TraineeTrainer;
 import com.epam.gym_crm.entity.Trainer;
 import com.epam.gym_crm.entity.Training;
 import com.epam.gym_crm.entity.TrainingType;
-import com.epam.gym_crm.entity.User;
 import com.epam.gym_crm.repository.TrainingRepository;
+import com.epam.gym_crm.service.TraineeService;
 import com.epam.gym_crm.service.TraineeTrainerService;
+import com.epam.gym_crm.service.TrainerService;
 import com.epam.gym_crm.service.TrainingTypeService;
 import com.epam.gym_crm.service_impl.TrainingServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class TrainingServiceImplTest {
+public class TrainingServiceImplTest {
 
     @Mock
     private TrainingRepository trainingRepository;
+
+    @Mock
+    private TraineeService traineeService;
+
+    @Mock
+    private TrainerService trainerService;
 
     @Mock
     private TrainingTypeService trainingTypeService;
@@ -48,167 +59,347 @@ class TrainingServiceImplTest {
     @InjectMocks
     private TrainingServiceImpl trainingService;
 
-    @Test
-    void getTraineeTrainings_ValidRequest_ReturnsTrainings() {
-        GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
-        request.setTraineeUsername("trainee");
-        List<Training> expected = Collections.singletonList(new Training());
+    @Captor
+    private ArgumentCaptor<Training> trainingCaptor;
 
-        when(trainingRepository.findAllTraineeTrainings(any(), any(), any(), any(), any()))
-                .thenReturn(expected);
+    private Trainee trainee;
+    private Trainer trainer;
+    private TrainingType trainingType;
+    private Date fromDate;
+    private Date toDate;
+    private List<Training> mockTrainings;
 
-        List<Training> result = trainingService.getTraineeTrainings(request);
+    @BeforeEach
+    public void setUp() {
+        // Create common test data
+        trainee = new Trainee();
+        trainee.setId(1L);
 
-        assertFalse(result.isEmpty());
-        verify(trainingRepository).findAllTraineeTrainings(
-                "trainee", null, null, null, null
-        );
+        trainer = new Trainer();
+        trainer.setId(2L);
+
+        trainingType = new TrainingType();
+        trainingType.setId(1L);
+        trainingType.setTrainingTypeName("Cardio");
+
+        // Create dates
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(2023, Calendar.JANUARY, 1);
+        fromDate = calendar.getTime();
+
+        calendar.set(2023, Calendar.DECEMBER, 31);
+        toDate = calendar.getTime();
+
+        // Create mock training list
+        mockTrainings = new ArrayList<>();
+        Training training = new Training();
+        training.setId(1L);
+        training.setTrainee(trainee);
+        training.setTrainer(trainer);
+        training.setTrainingType(trainingType);
+        training.setTrainingDate(new Date());
+        mockTrainings.add(training);
     }
 
     @Test
-    void getTraineeTrainings_InvalidUsername_ThrowsException() {
+    public void testGetTraineeTrainings_NullTraineeUsername_ThrowsException() {
+        // Arrange
         GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
-        assertThrows(IllegalArgumentException.class, () -> trainingService.getTraineeTrainings(request));
+        request.setTraineeUsername(null);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.getTraineeTrainings(request));
+        assertEquals("Trainee username cannot be empty.", exception.getMessage());
     }
 
     @Test
-    void getTrainerTrainings_ValidRequest_ReturnsTrainings() {
+    public void testGetTraineeTrainings_EmptyTraineeUsername_ThrowsException() {
+        // Arrange
+        GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
+        request.setTraineeUsername("  ");
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.getTraineeTrainings(request));
+        assertEquals("Trainee username cannot be empty.", exception.getMessage());
+    }
+
+    @Test
+    public void testGetTraineeTrainings_InvalidDateRange_ThrowsException() {
+        // Arrange
+        GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
+        request.setTraineeUsername("trainee1");
+        request.setFrom(toDate);  // Later date
+        request.setTo(fromDate);  // Earlier date
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.getTraineeTrainings(request));
+        assertEquals("Invalid date range: 'from' date cannot be after 'to' date.", exception.getMessage());
+    }
+
+    @Test
+    public void testGetTraineeTrainings_InvalidTrainer_ThrowsException() {
+        // Arrange
+        GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
+        request.setTraineeUsername("trainee1");
+        request.setTrainerUsername("nonexistent");
+
+        when(trainerService.getTrainerByUsername("nonexistent")).thenReturn(null);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.getTraineeTrainings(request));
+        assertEquals("Trainer not found with username: nonexistent", exception.getMessage());
+    }
+
+    @Test
+    public void testGetTrainerTrainings_ValidRequest_ReturnsTrainings() {
+        // Arrange
         GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
-        request.setTrainerUsername("trainer");
-        List<Training> expected = Collections.singletonList(new Training());
+        request.setTrainerUsername("trainer1");
+        request.setFrom(fromDate);
+        request.setTo(toDate);
 
-        when(trainingRepository.findAllTrainerTrainings(any(), any(), any(), any()))
-                .thenReturn(expected);
+        when(trainerService.getTrainerByUsername("trainer1")).thenReturn(trainer);
+        when(trainingRepository.findAllTrainerTrainings(
+                eq("trainer1"), eq(null), eq(fromDate), eq(toDate)))
+                .thenReturn(mockTrainings);
 
+        // Act
         List<Training> result = trainingService.getTrainerTrainings(request);
 
-        assertFalse(result.isEmpty());
-        verify(trainingRepository).findAllTrainerTrainings(
-                "trainer", null, null, null
-        );
+        // Assert
+        assertEquals(mockTrainings.size(), result.size());
+        assertEquals(mockTrainings, result);
     }
 
     @Test
-    void addTraining_ValidRequest_ReturnsSavedTraining() {
+    public void testGetTrainerTrainings_WithTraineeFilter_ReturnsFilteredTrainings() {
+        // Arrange
+        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
+        request.setTrainerUsername("trainer1");
+        request.setTraineeUsername("trainee1");
+        request.setFrom(fromDate);
+        request.setTo(toDate);
+
+        when(trainerService.getTrainerByUsername("trainer1")).thenReturn(trainer);
+        when(traineeService.getTraineeByUsername("trainee1")).thenReturn(trainee);
+        when(trainingRepository.findAllTrainerTrainings(
+                eq("trainer1"), eq("trainee1"), eq(fromDate), eq(toDate)))
+                .thenReturn(mockTrainings);
+
+        // Act
+        List<Training> result = trainingService.getTrainerTrainings(request);
+
+        // Assert
+        assertEquals(mockTrainings.size(), result.size());
+        assertEquals(mockTrainings, result);
+    }
+
+    @Test
+    public void testGetTrainerTrainings_NullTrainerUsername_ThrowsException() {
+        // Arrange
+        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
+        request.setTrainerUsername(null);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.getTrainerTrainings(request));
+        assertEquals("Trainer username cannot be empty.", exception.getMessage());
+    }
+
+    @Test
+    public void testGetTrainerTrainings_EmptyTrainerUsername_ThrowsException() {
+        // Arrange
+        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
+        request.setTrainerUsername("  ");
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.getTrainerTrainings(request));
+        assertEquals("Trainer username cannot be empty.", exception.getMessage());
+    }
+
+    @Test
+    public void testGetTrainerTrainings_NonexistentTrainer_ThrowsException() {
+        // Arrange
+        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
+        request.setTrainerUsername("nonexistent");
+
+        when(trainerService.getTrainerByUsername("nonexistent")).thenReturn(null);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.getTrainerTrainings(request));
+        assertEquals("Trainer not found with username: nonexistent", exception.getMessage());
+    }
+
+    @Test
+    public void testGetTrainerTrainings_InvalidTrainee_ThrowsException() {
+        // Arrange
+        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
+        request.setTrainerUsername("trainer1");
+        request.setTraineeUsername("nonexistent");
+
+        when(trainerService.getTrainerByUsername("trainer1")).thenReturn(trainer);
+        when(traineeService.getTraineeByUsername("nonexistent")).thenReturn(null);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.getTrainerTrainings(request));
+        assertEquals("Trainee not found with username: nonexistent", exception.getMessage());
+    }
+
+    @Test
+    public void testAddTraining_ValidRequest_ReturnsTraining() {
         // Arrange
         AddTrainingRequestDTO request = new AddTrainingRequestDTO();
-        request.setTraineeUsername("trainee");
-        request.setTrainerUsername("trainer");
-        request.setTrainingTypeName("Type");
+        request.setTraineeUsername("trainee1");
+        request.setTrainerUsername("trainer1");
+        request.setTrainingTypeName("Cardio");
         request.setTrainingDate(new Date());
 
-        // Mock TrainingType
-        TrainingType trainingType = new TrainingType();
-        trainingType.setTrainingTypeName("Type");
+        when(traineeService.getTraineeByUsername("trainee1")).thenReturn(trainee);
+        when(trainerService.getTrainerByUsername("trainer1")).thenReturn(trainer);
+        when(trainingTypeService.findByValue("Cardio")).thenReturn(Optional.of(trainingType));
 
-        // Mock Trainee and Trainer
-        Training expectedTraining = getTraining(trainingType, request);
-
-        // Mock TraineeTrainer
-        TraineeTrainer expectedRelation = new TraineeTrainer();
-
-        // Mock dependencies
-        when(trainingTypeService.findByValue("Type")).thenReturn(Optional.of(trainingType));
-        when(trainingRepository.save(any(Training.class))).thenReturn(expectedTraining);
-        when(traineeTrainerService.createTraineeTrainer("trainee", "trainer")).thenReturn(expectedRelation);
+        Training savedTraining = new Training();
+        savedTraining.setId(1L);
+        when(trainingRepository.save(any(Training.class))).thenReturn(savedTraining);
 
         // Act
         Training result = trainingService.addTraining(request);
 
         // Assert
         assertNotNull(result);
-        assertEquals("trainee", result.getTrainee().getUser().getUsername());
-        assertEquals("trainer", result.getTrainer().getUser().getUsername());
-        assertEquals("Type", result.getTrainingType().getTrainingTypeName());
-        verify(trainingRepository).save(any(Training.class));
-        verify(traineeTrainerService).createTraineeTrainer("trainee", "trainer");
-    }
+        assertEquals(1L, result.getId());
 
-    private static Training getTraining(TrainingType trainingType, AddTrainingRequestDTO request) {
-        Trainee trainee = new Trainee();
-        User traineeUser = new User();
-        traineeUser.setUsername("trainee");
-        trainee.setUser(traineeUser);
+        verify(trainingRepository).save(trainingCaptor.capture());
+        Training capturedTraining = trainingCaptor.getValue();
+        assertEquals(trainee, capturedTraining.getTrainee());
+        assertEquals(trainer, capturedTraining.getTrainer());
+        assertEquals(trainingType, capturedTraining.getTrainingType());
+        assertEquals(request.getTrainingDate(), capturedTraining.getTrainingDate());
 
-        Trainer trainer = new Trainer();
-        User trainerUser = new User();
-        trainerUser.setUsername("trainer");
-        trainer.setUser(trainerUser);
-
-        // Mock Training
-        Training expectedTraining = new Training();
-        expectedTraining.setTrainee(trainee);
-        expectedTraining.setTrainer(trainer);
-        expectedTraining.setTrainingType(trainingType);
-        expectedTraining.setTrainingDate(request.getTrainingDate());
-        return expectedTraining;
+        verify(traineeTrainerService).createTraineeTrainer("trainee1", "trainer1");
     }
 
     @Test
-    void addTraining_InvalidTrainingType_ThrowsException() {
+    public void testAddTraining_NullTraineeUsername_ThrowsException() {
         // Arrange
         AddTrainingRequestDTO request = new AddTrainingRequestDTO();
-        request.setTraineeUsername("trainee");
-        request.setTrainerUsername("trainer");
+        request.setTraineeUsername(null);
+        request.setTrainerUsername("trainer1");
+        request.setTrainingTypeName("Cardio");
+        request.setTrainingDate(new Date());
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.addTraining(request));
+        assertEquals("Trainee username cannot be empty.", exception.getMessage());
+
+        verify(trainingRepository, never()).save(any(Training.class));
+        verify(traineeTrainerService, never()).createTraineeTrainer(anyString(), anyString());
+    }
+
+    @Test
+    public void testAddTraining_NullTrainerUsername_ThrowsException() {
+        // Arrange
+        AddTrainingRequestDTO request = new AddTrainingRequestDTO();
+        request.setTraineeUsername("trainee1");
+        request.setTrainerUsername(null);
+        request.setTrainingTypeName("Cardio");
+        request.setTrainingDate(new Date());
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.addTraining(request));
+        assertEquals("Trainer username cannot be empty.", exception.getMessage());
+
+        verify(trainingRepository, never()).save(any(Training.class));
+        verify(traineeTrainerService, never()).createTraineeTrainer(anyString(), anyString());
+    }
+
+    @Test
+    public void testAddTraining_NullTrainingDate_ThrowsException() {
+        // Arrange
+        AddTrainingRequestDTO request = new AddTrainingRequestDTO();
+        request.setTraineeUsername("trainee1");
+        request.setTrainerUsername("trainer1");
+        request.setTrainingTypeName("Cardio");
+        request.setTrainingDate(null);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.addTraining(request));
+        assertEquals("Training date cannot be null.", exception.getMessage());
+
+        verify(trainingRepository, never()).save(any(Training.class));
+        verify(traineeTrainerService, never()).createTraineeTrainer(anyString(), anyString());
+    }
+
+    @Test
+    public void testAddTraining_TraineeNotFound_ThrowsException() {
+        // Arrange
+        AddTrainingRequestDTO request = new AddTrainingRequestDTO();
+        request.setTraineeUsername("nonexistent");
+        request.setTrainerUsername("trainer1");
+        request.setTrainingTypeName("Cardio");
+        request.setTrainingDate(new Date());
+
+        when(traineeService.getTraineeByUsername("nonexistent")).thenReturn(null);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.addTraining(request));
+        assertEquals("No trainee found with username: nonexistent", exception.getMessage());
+
+        verify(trainingRepository, never()).save(any(Training.class));
+        verify(traineeTrainerService, never()).createTraineeTrainer(anyString(), anyString());
+    }
+
+    @Test
+    public void testAddTraining_TrainerNotFound_ThrowsException() {
+        // Arrange
+        AddTrainingRequestDTO request = new AddTrainingRequestDTO();
+        request.setTraineeUsername("trainee1");
+        request.setTrainerUsername("nonexistent");
+        request.setTrainingTypeName("Cardio");
+        request.setTrainingDate(new Date());
+
+        when(traineeService.getTraineeByUsername("trainee1")).thenReturn(trainee);
+        when(trainerService.getTrainerByUsername("nonexistent")).thenReturn(null);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.addTraining(request));
+        assertEquals("No trainer found with username: nonexistent", exception.getMessage());
+
+        verify(trainingRepository, never()).save(any(Training.class));
+        verify(traineeTrainerService, never()).createTraineeTrainer(anyString(), anyString());
+    }
+
+    @Test
+    public void testAddTraining_InvalidTrainingType_ThrowsException() {
+        // Arrange
+        AddTrainingRequestDTO request = new AddTrainingRequestDTO();
+        request.setTraineeUsername("trainee1");
+        request.setTrainerUsername("trainer1");
         request.setTrainingTypeName("InvalidType");
         request.setTrainingDate(new Date());
 
-        // Mock the behavior of trainingTypeService.findByValue()
+        when(traineeService.getTraineeByUsername("trainee1")).thenReturn(trainee);
+        when(trainerService.getTrainerByUsername("trainer1")).thenReturn(trainer);
         when(trainingTypeService.findByValue("InvalidType")).thenReturn(Optional.empty());
 
         // Act & Assert
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(request));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> trainingService.addTraining(request));
         assertEquals("Invalid training type: InvalidType", exception.getMessage());
 
-        // Verify that trainingTypeService.findByValue() was called
-        verify(trainingTypeService).findByValue("InvalidType");
-    }
-
-    @Test
-    void addTraining_VerifyUsernameTrimming() {
-        // Arrange
-        AddTrainingRequestDTO request = new AddTrainingRequestDTO();
-        request.setTraineeUsername("  trainee  ");
-        request.setTrainerUsername("  trainer  ");
-        request.setTrainingTypeName("Type");
-        request.setTrainingDate(new Date());
-
-        // Mock TrainingType
-        TrainingType trainingType = new TrainingType();
-        when(trainingTypeService.findByValue("Type")).thenReturn(Optional.of(trainingType));
-
-        // Mock the save method and capture the Training object
-        ArgumentCaptor<Training> captor = ArgumentCaptor.forClass(Training.class);
-        when(trainingRepository.save(captor.capture())).thenReturn(new Training());
-
-        // Mock TraineeTrainerService to return a valid TraineeTrainer object
-        TraineeTrainer traineeTrainer = new TraineeTrainer();
-        traineeTrainer.setId(1L); // Set a mock ID
-        when(traineeTrainerService.createTraineeTrainer("trainee", "trainer")).thenReturn(traineeTrainer);
-
-        // Act
-        trainingService.addTraining(request);
-
-        // Assert
-        Training savedTraining = captor.getValue();
-        assertNotNull(savedTraining.getTrainee());
-        assertNotNull(savedTraining.getTrainer());
-        assertEquals("trainee", savedTraining.getTrainee().getUser().getUsername());
-        assertEquals("trainer", savedTraining.getTrainer().getUser().getUsername());
-
-        // Verify interactions
-        verify(trainingTypeService).findByValue("Type");
-        verify(trainingRepository).save(any(Training.class));
-        verify(traineeTrainerService).createTraineeTrainer("trainee", "trainer");
-    }
-
-    @Test
-    void getTraineeTrainings_InvalidDateRange_ThrowsException() {
-        GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
-        request.setTraineeUsername("trainee");
-        request.setFrom(new Date(System.currentTimeMillis() + 1000));
-        request.setTo(new Date());
-
-        assertThrows(IllegalArgumentException.class, () -> trainingService.getTraineeTrainings(request));
+        verify(trainingRepository, never()).save(any(Training.class));
+        verify(traineeTrainerService, never()).createTraineeTrainer(anyString(), anyString());
     }
 }

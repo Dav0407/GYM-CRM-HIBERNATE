@@ -7,7 +7,7 @@ import com.epam.gym_crm.entity.User;
 import com.epam.gym_crm.repository.TraineeRepository;
 import com.epam.gym_crm.service.TraineeService;
 import com.epam.gym_crm.service.UserService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -40,7 +40,7 @@ public class TraineeServiceImpl implements TraineeService {
                 .build();
 
         user = userService.saveUser(user);
-        LOG.info("User created successfully: " + user.getUsername());
+        LOG.info("User created successfully: " + user.toString());
 
         Trainee trainee = Trainee.builder()
                 .dateOfBirth(request.getDateOfBirth())
@@ -50,7 +50,7 @@ public class TraineeServiceImpl implements TraineeService {
 
         Trainee savedTrainee = traineeRepository.save(trainee);
 
-        LOG.info("Trainee profile created successfully: " + savedTrainee.getId());
+        LOG.info("Trainee profile created successfully: " + savedTrainee);
         return savedTrainee;
     }
 

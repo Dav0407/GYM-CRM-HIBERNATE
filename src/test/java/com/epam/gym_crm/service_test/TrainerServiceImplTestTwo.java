@@ -110,9 +110,7 @@ public class TrainerServiceImplTestTwo {
         createRequest.setFirstName("");
         createRequest.setLastName("");
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            trainerService.createTrainerProfile(createRequest);
-        });
+        assertThrows(IllegalArgumentException.class, () -> trainerService.createTrainerProfile(createRequest));
 
         verify(userService, never()).generateUsername(anyString(), anyString());
         verify(userService, never()).generateRandomPassword();
@@ -136,9 +134,7 @@ public class TrainerServiceImplTestTwo {
     void testGetTrainerByIdNotFound() {
         when(trainerRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> {
-            trainerService.getTrainerById(1L);
-        });
+        assertThrows(RuntimeException.class, () -> trainerService.getTrainerById(1L));
 
         verify(trainerRepository, times(1)).findById(1L);
     }
@@ -161,9 +157,7 @@ public class TrainerServiceImplTestTwo {
         when(userService.getUserByUsername("john.doe")).thenReturn(user);
         when(trainerRepository.findByUserId(1L)).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> {
-            trainerService.getTrainerByUsername("john.doe");
-        });
+        assertThrows(RuntimeException.class, () -> trainerService.getTrainerByUsername("john.doe"));
 
         verify(userService, times(1)).getUserByUsername("john.doe");
         verify(trainerRepository, times(1)).findByUserId(1L);
@@ -198,9 +192,7 @@ public class TrainerServiceImplTestTwo {
     void testUpdateTrainerProfileNotFound() {
         when(trainerRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> {
-            trainerService.updateTrainerProfile(1L, updateRequest);
-        });
+        assertThrows(RuntimeException.class, () -> trainerService.updateTrainerProfile(1L, updateRequest));
 
         verify(trainerRepository, times(1)).findById(1L);
         verify(trainingTypeService, never()).findByValue(anyString());
@@ -229,9 +221,7 @@ public class TrainerServiceImplTestTwo {
 
     @Test
     void testGetNotAssignedTrainersByTraineeUsernameWithEmptyUsername() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            trainerService.getNotAssignedTrainersByTraineeUsername("");
-        });
+        assertThrows(IllegalArgumentException.class, () -> trainerService.getNotAssignedTrainersByTraineeUsername(""));
 
         verify(trainerRepository, never()).findUnassignedTrainersByTraineeUsername(anyString());
     }

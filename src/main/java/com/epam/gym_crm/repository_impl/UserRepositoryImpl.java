@@ -4,7 +4,7 @@ import com.epam.gym_crm.entity.User;
 import com.epam.gym_crm.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -37,20 +37,28 @@ public class UserRepositoryImpl implements UserRepository {
         return Optional.ofNullable(user);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public Optional<User> findByUsername(String username) {
-        User user = entityManager.find(User.class, username);
-        return user != null ? Optional.of(user) : Optional.empty();
+        return entityManager.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class)
+                .setParameter("username", username)
+                .getResultList()
+                .stream()
+                .findFirst();
     }
 
     @Transactional
     @Override
     public void deleteByUsername(String username) {
-        User user = entityManager.find(User.class, username);
-        if (user != null) {
-            entityManager.remove(user);
-        }
+        entityManager.createQuery(
+                        "SELECT u FROM User u WHERE u.username = :username", User.class)
+                .setParameter("username", username)
+                .getResultList()
+                .stream()
+                .findFirst()
+                .ifPresent(user -> entityManager.remove(user));
     }
+
 
     @Override
     public List<User> findAll() {
@@ -63,7 +71,8 @@ public class UserRepositoryImpl implements UserRepository {
     public void updatePassword(String username, String newPassword) {
         User user = entityManager.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class)
                 .setParameter("username", username)
-                .getResultStream()
+                .getResultList()
+                .stream()
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
 

@@ -8,7 +8,7 @@ import com.epam.gym_crm.repository.TrainerRepository;
 import com.epam.gym_crm.service.TrainerService;
 import com.epam.gym_crm.service.TrainingTypeService;
 import com.epam.gym_crm.service.UserService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -43,7 +43,7 @@ public class TrainerServiceImpl implements TrainerService {
                 .build();
 
         user = userService.saveUser(user);
-        LOG.info("User created successfully: " + user.getUsername());
+        LOG.info("User created successfully: " + user.toString());
 
         Trainer trainer = Trainer.builder()
                 .specialization(trainingTypeService.findByValue(request.getTrainingType())

@@ -1,9 +1,9 @@
 package com.epam.gym_crm.repository_test;
 
 import com.epam.gym_crm.entity.Trainee;
+import com.epam.gym_crm.entity.User;
 import com.epam.gym_crm.repository_impl.TraineeRepositoryImpl;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceException;
 import jakarta.persistence.TypedQuery;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,123 +12,153 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class TraineeRepositoryImplTest {
+public class TraineeRepositoryImplTest {
 
     @Mock
     private EntityManager entityManager;
+
+    @Mock
+    private TypedQuery<Trainee> query;
 
     @InjectMocks
     private TraineeRepositoryImpl traineeRepository;
 
     private Trainee trainee;
+    private User user;
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
+        user = new User();
+        user.setId(1L);
+        user.setFirstName("John");
+        user.setLastName("Doe");
+
         trainee = new Trainee();
+        trainee.setUser(user);
     }
 
     @Test
-    void save_NewTrainee_PersistsAndReturnsTrainee() {
-        trainee.setId(null);
-
-        Trainee savedTrainee = traineeRepository.save(trainee);
-
-        verify(entityManager).persist(trainee);
-        assertThat(savedTrainee).isEqualTo(trainee);
-    }
-
-    @Test
-    void save_ExistingManagedTrainee_MergesAndReturnsTrainee() {
+    public void testSaveExistingTrainee() {
+        // Arrange
         trainee.setId(1L);
         when(entityManager.contains(trainee)).thenReturn(true);
         when(entityManager.merge(trainee)).thenReturn(trainee);
 
-        Trainee result = traineeRepository.save(trainee);
+        // Act
+        Trainee savedTrainee = traineeRepository.save(trainee);
 
-        verify(entityManager).merge(trainee);
-        assertThat(result).isEqualTo(trainee);
+        // Assert
+        verify(entityManager, never()).persist(any(Trainee.class));
+        verify(entityManager, times(1)).merge(trainee);
+        assertEquals(trainee, savedTrainee);
     }
 
     @Test
-    void save_ExistingUnmanagedTrainee_PersistsTrainee() {
-        trainee.setId(2L);
+    public void testSaveExistingTraineeNotContainedInEntityManager() {
+        // Arrange
+        trainee.setId(1L);
         when(entityManager.contains(trainee)).thenReturn(false);
 
-        Trainee result = traineeRepository.save(trainee);
+        // Act
+        Trainee savedTrainee = traineeRepository.save(trainee);
 
-        verify(entityManager).persist(trainee);
-        assertThat(result).isEqualTo(trainee);
+        // Assert
+        verify(entityManager, times(1)).persist(trainee);
+        verify(entityManager, never()).merge(any(Trainee.class));
+        assertEquals(trainee, savedTrainee);
     }
 
     @Test
-    void save_PersistenceException_ThrowsRuntimeException() {
+    public void testSaveWithException() {
+        // Arrange
         trainee.setId(null);
-        doThrow(new PersistenceException("DB error")).when(entityManager).persist(trainee);
+        doThrow(new RuntimeException("Database error")).when(entityManager).persist(any(Trainee.class));
 
-        assertThrows(RuntimeException.class, () -> traineeRepository.save(trainee));
-        verify(entityManager).persist(trainee);
+        // Act & Assert
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            traineeRepository.save(trainee);
+        });
+
+        assertTrue(exception.getMessage().contains("Failed to save trainee"));
     }
 
     @Test
-    void findById_TraineeExists_ReturnsOptionalTrainee() {
-        Long id = 1L;
-        when(entityManager.find(Trainee.class, id)).thenReturn(trainee);
+    public void testFindByIdWhenTraineeExists() {
+        // Arrange
+        Long traineeId = 1L;
+        when(entityManager.find(Trainee.class, traineeId)).thenReturn(trainee);
 
-        Optional<Trainee> result = traineeRepository.findById(id);
+        // Act
+        Optional<Trainee> result = traineeRepository.findById(traineeId);
 
-        assertThat(result).contains(trainee);
+        // Assert
+        assertTrue(result.isPresent());
+        assertEquals(trainee, result.get());
     }
 
     @Test
-    void findById_TraineeNotExists_ReturnsEmptyOptional() {
-        Long id = 1L;
-        when(entityManager.find(Trainee.class, id)).thenReturn(null);
+    public void testFindByIdWhenTraineeDoesNotExist() {
+        // Arrange
+        Long traineeId = 1L;
+        when(entityManager.find(Trainee.class, traineeId)).thenReturn(null);
 
-        Optional<Trainee> result = traineeRepository.findById(id);
+        // Act
+        Optional<Trainee> result = traineeRepository.findById(traineeId);
 
-        assertThat(result).isEmpty();
+        // Assert
+        assertTrue(result.isEmpty());
     }
 
     @Test
-    void findByUserId_TraineeExists_ReturnsOptionalTrainee() {
-        Long userId = 123L;
-        TypedQuery<Trainee> query = mock(TypedQuery.class);
-        when(entityManager.createQuery("SELECT t FROM Trainee t WHERE t.user.id = :userId", Trainee.class))
-                .thenReturn(query);
+    public void testFindByUserIdWhenTraineeExists() {
+        // Arrange
+        Long userId = 1L;
+        List<Trainee> traineeList = new ArrayList<>();
+        traineeList.add(trainee);
+
+        when(entityManager.createQuery(anyString(), eq(Trainee.class))).thenReturn(query);
         when(query.setParameter("userId", userId)).thenReturn(query);
-        when(query.getResultStream()).thenReturn(Stream.of(trainee));
+        when(query.getResultList()).thenReturn(traineeList);
 
+        // Act
         Optional<Trainee> result = traineeRepository.findByUserId(userId);
 
-        assertThat(result).contains(trainee);
-        verify(query).setParameter("userId", userId);
-        verify(query).getResultStream();
+        // Assert
+        assertTrue(result.isPresent());
+        assertEquals(trainee, result.get());
     }
 
     @Test
-    void findByUserId_TraineeNotExists_ReturnsEmptyOptional() {
-        Long userId = 123L;
-        TypedQuery<Trainee> query = mock(TypedQuery.class);
-        when(entityManager.createQuery("SELECT t FROM Trainee t WHERE t.user.id = :userId", Trainee.class))
-                .thenReturn(query);
-        when(query.setParameter("userId", userId)).thenReturn(query);
-        when(query.getResultStream()).thenReturn(Stream.empty());
+    public void testFindByUserIdWhenTraineeDoesNotExist() {
+        // Arrange
+        Long userId = 1L;
+        List<Trainee> emptyList = new ArrayList<>();
 
+        when(entityManager.createQuery(anyString(), eq(Trainee.class))).thenReturn(query);
+        when(query.setParameter("userId", userId)).thenReturn(query);
+        when(query.getResultList()).thenReturn(emptyList);
+
+        // Act
         Optional<Trainee> result = traineeRepository.findByUserId(userId);
 
-        assertThat(result).isEmpty();
-        verify(query).setParameter("userId", userId);
-        verify(query).getResultStream();
+        // Assert
+        assertTrue(result.isEmpty());
     }
 }

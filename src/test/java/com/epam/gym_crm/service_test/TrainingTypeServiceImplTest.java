@@ -28,17 +28,15 @@ class TrainingTypeServiceImplTest {
 
     @Test
     void findByValue_WhenTrainingTypeExists_ReturnsTrainingType() {
-        // Arrange
+
         String value = "Cardio";
         TrainingType expectedTrainingType = new TrainingType();
         expectedTrainingType.setTrainingTypeName(value);
 
         when(trainingTypeRepository.findByValue(value)).thenReturn(Optional.of(expectedTrainingType));
 
-        // Act
         Optional<TrainingType> result = trainingTypeService.findByValue(value);
 
-        // Assert
         assertTrue(result.isPresent());
         assertEquals(value, result.get().getTrainingTypeName());
         verify(trainingTypeRepository).findByValue(value);
@@ -46,15 +44,13 @@ class TrainingTypeServiceImplTest {
 
     @Test
     void findByValue_WhenTrainingTypeDoesNotExist_ReturnsEmptyOptional() {
-        // Arrange
+
         String value = "InvalidType";
 
         when(trainingTypeRepository.findByValue(value)).thenReturn(Optional.empty());
 
-        // Act
         Optional<TrainingType> result = trainingTypeService.findByValue(value);
 
-        // Assert
         assertFalse(result.isPresent());
         verify(trainingTypeRepository).findByValue(value);
     }

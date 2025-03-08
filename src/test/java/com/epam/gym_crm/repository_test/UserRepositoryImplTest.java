@@ -1,208 +1,268 @@
-package com.epam.gym_crm.repository_test;
+package com.epam.gym_crm.repository_impl;
 
 import com.epam.gym_crm.entity.User;
-import com.epam.gym_crm.repository_impl.UserRepositoryImpl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class UserRepositoryImplTest {
+public class UserRepositoryImplTest {
 
     @Mock
     private EntityManager entityManager;
 
+    @Mock
+    private TypedQuery<User> typedQuery;
+
     @InjectMocks
     private UserRepositoryImpl userRepository;
 
-    private User testUser;
+    @Captor
+    private ArgumentCaptor<User> userCaptor;
+
+    private User user;
 
     @BeforeEach
-    void setUp() {
-        testUser = new User();
-        testUser.setId(1L);
-        testUser.setUsername("testuser");
-        testUser.setPassword("password");
+    public void setUp() {
+        user = new User();
+        user.setId(1L);
+        user.setUsername("testUser");
+        user.setPassword("password123");
     }
 
     @Test
-    void save_NewUser_ShouldPersist() {
+    public void testSave_NewUser_ShouldPersist() {
         // Arrange
         User newUser = new User();
-        newUser.setUsername("newuser");
+        newUser.setUsername("newUser");
+        newUser.setPassword("newPassword");
+        // No ID
 
         // Act
-        User savedUser = userRepository.save(newUser);
+        User result = userRepository.save(newUser);
 
         // Assert
         verify(entityManager).persist(newUser);
-        assertEquals(newUser, savedUser);
+        verify(entityManager, never()).merge(any(User.class));
+        assertSame(newUser, result);
     }
 
     @Test
-    void save_ExistingUser_ShouldMerge() {
+    public void testSave_ExistingUserNotContained_ShouldPersist() {
         // Arrange
-        testUser.setPassword("newpassword");
+        when(entityManager.contains(user)).thenReturn(false);
 
         // Act
-        when(entityManager.contains(testUser)).thenReturn(true);
-        when(entityManager.merge(testUser)).thenReturn(testUser);
-        User updatedUser = userRepository.save(testUser);
+        User result = userRepository.save(user);
 
         // Assert
-        verify(entityManager).merge(testUser);
-        assertNotNull(updatedUser);
-        assertEquals(testUser, updatedUser);
+        verify(entityManager).persist(user);
+        verify(entityManager, never()).merge(any(User.class));
+        assertSame(user, result);
     }
 
     @Test
-    void save_WithException_ShouldThrowRuntimeException() {
+    public void testSave_ExistingUserContained_ShouldMerge() {
         // Arrange
-        User newUser = new User();
-        doThrow(new RuntimeException("Persistence error")).when(entityManager).persist(newUser);
+        User updatedUser = new User();
+        updatedUser.setId(1L);
+        updatedUser.setUsername("updatedUser");
+        when(entityManager.contains(updatedUser)).thenReturn(true);
+        when(entityManager.merge(updatedUser)).thenReturn(updatedUser);
+
+        // Act
+        User result = userRepository.save(updatedUser);
+
+        // Assert
+        verify(entityManager, never()).persist(any(User.class));
+        verify(entityManager).merge(updatedUser);
+        assertSame(updatedUser, result);
+    }
+
+    @Test
+    public void testSave_PersistException_ShouldThrowRuntimeException() {
+        // Arrange
+        doThrow(new RuntimeException("Database error")).when(entityManager).persist(any(User.class));
 
         // Act & Assert
-        assertThrows(RuntimeException.class, () -> userRepository.save(newUser));
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            userRepository.save(user);
+        });
+
+        assertTrue(exception.getMessage().contains("Failed to save user"));
     }
 
     @Test
-    void findById_ExistingUser_ShouldReturnUser() {
+    public void testFindById_ExistingId_ShouldReturnUser() {
         // Arrange
-        when(entityManager.find(User.class, 1L)).thenReturn(testUser);
+        Long id = 1L;
+        when(entityManager.find(User.class, id)).thenReturn(user);
 
         // Act
-        Optional<User> foundUser = userRepository.findById(1L);
+        Optional<User> result = userRepository.findById(id);
 
         // Assert
-        assertTrue(foundUser.isPresent());
-        assertEquals(testUser, foundUser.get());
+        assertTrue(result.isPresent());
+        assertEquals(user, result.get());
     }
 
     @Test
-    void findById_NonExistingUser_ShouldReturnEmptyOptional() {
+    public void testFindById_NonExistingId_ShouldReturnEmptyOptional() {
         // Arrange
-        when(entityManager.find(User.class, 999L)).thenReturn(null);
+        Long id = 999L;
+        when(entityManager.find(User.class, id)).thenReturn(null);
 
         // Act
-        Optional<User> foundUser = userRepository.findById(999L);
+        Optional<User> result = userRepository.findById(id);
 
         // Assert
-        assertTrue(foundUser.isEmpty());
+        assertFalse(result.isPresent());
     }
 
     @Test
-    void findByUsername_ExistingUser_ShouldReturnUser() {
+    public void testFindByUsername_ExistingUsername_ShouldReturnUser() {
         // Arrange
-        when(entityManager.find(User.class, "testuser")).thenReturn(testUser);
+        String username = "testUser";
+
+        when(entityManager.createQuery(anyString(), eq(User.class))).thenReturn(typedQuery);
+        when(typedQuery.setParameter("username", username)).thenReturn(typedQuery);
+        when(typedQuery.getResultList()).thenReturn(Collections.singletonList(user));
 
         // Act
-        Optional<User> foundUser = userRepository.findByUsername("testuser");
+        Optional<User> result = userRepository.findByUsername(username);
 
         // Assert
-        assertTrue(foundUser.isPresent());
-        assertEquals(testUser, foundUser.get());
+        assertTrue(result.isPresent());
+        assertEquals(user, result.get());
     }
 
     @Test
-    void findByUsername_NonExistingUser_ShouldReturnEmptyOptional() {
+    public void testFindByUsername_NonExistingUsername_ShouldReturnEmptyOptional() {
         // Arrange
-        when(entityManager.find(User.class, "nonexistent")).thenReturn(null);
+        String username = "nonExistentUser";
+
+        when(entityManager.createQuery(anyString(), eq(User.class))).thenReturn(typedQuery);
+        when(typedQuery.setParameter("username", username)).thenReturn(typedQuery);
+        when(typedQuery.getResultList()).thenReturn(Collections.emptyList());
 
         // Act
-        Optional<User> foundUser = userRepository.findByUsername("nonexistent");
+        Optional<User> result = userRepository.findByUsername(username);
 
         // Assert
-        assertTrue(foundUser.isEmpty());
+        assertFalse(result.isPresent());
     }
 
     @Test
-    void deleteByUsername_ExistingUser_ShouldRemove() {
+    public void testDeleteByUsername_ExistingUsername_ShouldRemoveUser() {
         // Arrange
-        when(entityManager.find(User.class, "testuser")).thenReturn(testUser);
+        String username = "testUser";
+
+        when(entityManager.createQuery(anyString(), eq(User.class))).thenReturn(typedQuery);
+        when(typedQuery.setParameter("username", username)).thenReturn(typedQuery);
+        when(typedQuery.getResultList()).thenReturn(Collections.singletonList(user));
 
         // Act
-        userRepository.deleteByUsername("testuser");
+        userRepository.deleteByUsername(username);
 
         // Assert
-        verify(entityManager).remove(testUser);
+        verify(entityManager).remove(user);
     }
 
     @Test
-    void deleteByUsername_NonExistingUser_ShouldNotRemove() {
+    public void testDeleteByUsername_NonExistingUsername_ShouldDoNothing() {
         // Arrange
-        when(entityManager.find(User.class, "nonexistent")).thenReturn(null);
+        String username = "nonExistentUser";
+
+        when(entityManager.createQuery(anyString(), eq(User.class))).thenReturn(typedQuery);
+        when(typedQuery.setParameter("username", username)).thenReturn(typedQuery);
+        when(typedQuery.getResultList()).thenReturn(Collections.emptyList());
 
         // Act
-        userRepository.deleteByUsername("nonexistent");
+        userRepository.deleteByUsername(username);
 
         // Assert
-        verify(entityManager, never()).remove(any());
+        verify(entityManager, never()).remove(any(User.class));
     }
 
     @Test
-    void findAll_ShouldReturnUserList() {
+    public void testFindAll_ShouldReturnAllUsers() {
         // Arrange
-        List<User> expectedUsers = Arrays.asList(testUser, new User());
-        TypedQuery<User> mockQuery = mock(TypedQuery.class);
+        User user2 = new User();
+        user2.setId(2L);
+        user2.setUsername("testUser2");
 
-        when(entityManager.createQuery("SELECT u FROM User u", User.class)).thenReturn(mockQuery);
-        when(mockQuery.getResultList()).thenReturn(expectedUsers);
+        List<User> userList = Arrays.asList(user, user2);
+
+        when(entityManager.createQuery("SELECT u FROM User u", User.class)).thenReturn(typedQuery);
+        when(typedQuery.getResultList()).thenReturn(userList);
 
         // Act
-        List<User> users = userRepository.findAll();
+        List<User> result = userRepository.findAll();
 
         // Assert
-        assertEquals(expectedUsers, users);
+        assertEquals(2, result.size());
+        assertEquals(userList, result);
     }
 
     @Test
-    void updatePassword_ExistingUser_ShouldUpdatePassword() {
+    public void testUpdatePassword_ExistingUsername_ShouldUpdatePassword() {
         // Arrange
-        TypedQuery<User> mockQuery = mock(TypedQuery.class);
-        when(entityManager.createQuery(anyString(), eq(User.class))).thenReturn(mockQuery);
-        when(mockQuery.setParameter(anyString(), anyString())).thenReturn(mockQuery);
-        when(mockQuery.getResultStream()).thenReturn(Stream.of(testUser));
+        String username = "testUser";
+        String newPassword = "newPassword123";
+
+        when(entityManager.createQuery(anyString(), eq(User.class))).thenReturn(typedQuery);
+        when(typedQuery.setParameter("username", username)).thenReturn(typedQuery);
+        when(typedQuery.getResultList()).thenReturn(Collections.singletonList(user));
 
         // Act
-        userRepository.updatePassword("testuser", "newpassword");
+        userRepository.updatePassword(username, newPassword);
 
         // Assert
-        verify(entityManager).merge(testUser);
-        assertEquals("newpassword", testUser.getPassword());
+        assertEquals(newPassword, user.getPassword());
+        verify(entityManager).merge(user);
     }
 
     @Test
-    void updatePassword_NonExistingUser_ShouldThrowException() {
+    public void testUpdatePassword_NonExistingUsername_ShouldThrowException() {
         // Arrange
-        TypedQuery<User> mockQuery = mock(TypedQuery.class);
-        when(entityManager.createQuery(anyString(), eq(User.class))).thenReturn(mockQuery);
-        when(mockQuery.setParameter(anyString(), anyString())).thenReturn(mockQuery);
-        when(mockQuery.getResultStream()).thenReturn(Stream.empty());
+        String username = "nonExistentUser";
+        String newPassword = "newPassword123";
+
+        when(entityManager.createQuery(anyString(), eq(User.class))).thenReturn(typedQuery);
+        when(typedQuery.setParameter("username", username)).thenReturn(typedQuery);
+        when(typedQuery.getResultList()).thenReturn(Collections.emptyList());
 
         // Act & Assert
-        assertThrows(RuntimeException.class, () -> userRepository.updatePassword("nonexistent", "newpassword"));
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            userRepository.updatePassword(username, newPassword);
+        });
+
+        assertTrue(exception.getMessage().contains("User not found with username"));
+        verify(entityManager, never()).merge(any(User.class));
     }
 }

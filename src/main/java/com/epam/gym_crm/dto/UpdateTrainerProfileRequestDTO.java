@@ -15,5 +15,5 @@ public class UpdateTrainerProfileRequestDTO {
     private String firstName;
     private String lastName;
     private String username;
-    private String TrainingTypeName;
+    private String trainingTypeName;
 }

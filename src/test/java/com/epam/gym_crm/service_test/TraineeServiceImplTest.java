@@ -68,17 +68,15 @@ class TraineeServiceImplTest {
 
     @Test
     void createTraineeProfile_ValidRequest_ShouldCreateSuccessfully() {
-        // Arrange
+
         when(userService.generateUsername(createRequest.getFirstName(), createRequest.getLastName()))
                 .thenReturn("john.doe");
         when(userService.generateRandomPassword()).thenReturn("password123");
         when(userService.saveUser(any(User.class))).thenReturn(mockUser);
         when(traineeRepository.save(any(Trainee.class))).thenReturn(mockTrainee);
 
-        // Act
         Trainee createdTrainee = traineeService.createTraineeProfile(createRequest);
 
-        // Assert
         assertNotNull(createdTrainee);
         assertEquals(mockTrainee.getId(), createdTrainee.getId());
         verify(userService).generateUsername(createRequest.getFirstName(), createRequest.getLastName());
@@ -88,10 +86,9 @@ class TraineeServiceImplTest {
 
     @Test
     void createTraineeProfile_EmptyFirstName_ShouldThrowException() {
-        // Arrange
+
         createRequest.setFirstName("");
 
-        // Act & Assert
         assertThrows(IllegalArgumentException.class,
                 () -> traineeService.createTraineeProfile(createRequest),
                 "First name and last name cannot be empty");
@@ -99,23 +96,20 @@ class TraineeServiceImplTest {
 
     @Test
     void getTraineeById_ExistingTrainee_ShouldReturnTrainee() {
-        // Arrange
+
         when(traineeRepository.findById(1L)).thenReturn(Optional.of(mockTrainee));
 
-        // Act
         Trainee foundTrainee = traineeService.getTraineeById(1L);
 
-        // Assert
         assertNotNull(foundTrainee);
         assertEquals(mockTrainee.getId(), foundTrainee.getId());
     }
 
     @Test
     void getTraineeById_NonExistingTrainee_ShouldThrowException() {
-        // Arrange
+
         when(traineeRepository.findById(999L)).thenReturn(Optional.empty());
 
-        // Act & Assert
         assertThrows(RuntimeException.class,
                 () -> traineeService.getTraineeById(999L),
                 "Trainee not found with ID: 999");
@@ -123,21 +117,19 @@ class TraineeServiceImplTest {
 
     @Test
     void getTraineeByUsername_ExistingTrainee_ShouldReturnTrainee() {
-        // Arrange
+
         when(userService.getUserByUsername("john.doe")).thenReturn(mockUser);
         when(traineeRepository.findByUserId(mockUser.getId())).thenReturn(Optional.of(mockTrainee));
 
-        // Act
         Trainee foundTrainee = traineeService.getTraineeByUsername("john.doe");
 
-        // Assert
         assertNotNull(foundTrainee);
         assertEquals(mockTrainee.getId(), foundTrainee.getId());
     }
 
     @Test
     void updateTraineeProfile_ValidUpdate_ShouldUpdateSuccessfully() {
-        // Arrange
+
         UpdateTraineeProfileRequestDTO updateRequest = new UpdateTraineeProfileRequestDTO();
         updateRequest.setFirstName("Jane");
         updateRequest.setLastName("Smith");
@@ -151,10 +143,8 @@ class TraineeServiceImplTest {
         when(traineeRepository.findById(1L)).thenReturn(Optional.of(mockTrainee));
         when(traineeRepository.save(any(Trainee.class))).thenReturn(mockTrainee);
 
-        // Act
         Trainee updatedTrainee = traineeService.updateTraineeProfile(1L, updateRequest);
 
-        // Assert
         assertNotNull(updatedTrainee);
         assertEquals("Jane", updatedTrainee.getUser().getFirstName());
         assertEquals("Smith", updatedTrainee.getUser().getLastName());
@@ -164,28 +154,25 @@ class TraineeServiceImplTest {
 
     @Test
     void deleteTraineeProfileByUsername_ShouldCallUserServiceDelete() {
-        // Act
+
         traineeService.deleteTraineeProfileByUsername("john.doe");
 
-        // Assert
         verify(userService).deleteUser("john.doe");
     }
 
     @Test
     void changePassword_ShouldCallUserServiceChangePassword() {
-        // Act
+
         traineeService.changePassword("john.doe", "oldPassword", "newPassword");
 
-        // Assert
         verify(userService).changePassword("john.doe", "oldPassword", "newPassword");
     }
 
     @Test
     void updateStatus_ShouldCallUserServiceUpdateStatus() {
-        // Act
+
         traineeService.updateStatus("john.doe");
 
-        // Assert
         verify(userService).updateStatus("john.doe");
     }
 }

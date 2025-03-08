@@ -10,7 +10,9 @@ import com.epam.gym_crm.entity.Training;
 import com.epam.gym_crm.entity.TrainingType;
 import com.epam.gym_crm.entity.User;
 import com.epam.gym_crm.repository.TrainingRepository;
+import com.epam.gym_crm.service.TraineeService;
 import com.epam.gym_crm.service.TraineeTrainerService;
+import com.epam.gym_crm.service.TrainerService;
 import com.epam.gym_crm.service.TrainingService;
 import com.epam.gym_crm.service.TrainingTypeService;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +20,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,132 +31,133 @@ public class TrainingServiceImpl implements TrainingService {
     private static final Log LOG = LogFactory.getLog(TrainingServiceImpl.class);
 
     private final TrainingRepository trainingRepository;
+    private final TraineeService traineeService;
+    private final TrainerService trainerService;
 
     private final TrainingTypeService trainingTypeService;
     private final TraineeTrainerService traineeTrainerService;
 
     @Override
     public List<Training> getTraineeTrainings(GetTraineeTrainingsRequestDTO request) {
-        LOG.info("Fetching trainee trainings for: " + request.getTraineeUsername());
+        LOG.info("Fetching trainings for trainee: {}" + request.getTraineeUsername());
 
-        // Input validation
-        if (request.getTraineeUsername() == null || request.getTraineeUsername().trim().isEmpty()) {
-            LOG.error("Invalid request: Trainee username is missing.");
-            throw new IllegalArgumentException("Trainee username cannot be empty.");
-        }
+        // Validate trainee username
+        String traineeUsername = Optional.ofNullable(request.getTraineeUsername())
+                .map(String::trim)
+                .filter(username -> !username.isEmpty())
+                .orElseThrow(() -> new IllegalArgumentException("Trainee username cannot be empty."));
 
+        // Validate date range
         if (request.getFrom() != null && request.getTo() != null && request.getFrom().after(request.getTo())) {
             LOG.error("Invalid date range: 'from' date is after 'to' date.");
             throw new IllegalArgumentException("Invalid date range: 'from' date cannot be after 'to' date.");
         }
 
-        List<Training> trainings = trainingRepository.findAllTraineeTrainings(
-                request.getTraineeUsername(),
-                request.getTrainerUsername(),
-                request.getFrom(),
-                request.getTo(),
-                request.getTrainingType());
+        // Validate trainer (if provided)
+        String trainerUsername = Optional.ofNullable(request.getTrainerUsername())
+                .map(String::trim)
+                .orElse(null);
 
-        if (trainings.isEmpty()) {
-            LOG.warn("No trainings found for trainee: " + request.getTraineeUsername());
-        } else {
-            LOG.info("Found " + trainings.size() + " trainings for trainee: " + request.getTraineeUsername());
+        if (trainerUsername != null && trainerService.getTrainerByUsername(trainerUsername) == null) {
+            throw new IllegalArgumentException("Trainer not found with username: " + trainerUsername);
         }
+
+        // Fetch trainings
+        List<Training> trainings = trainingRepository.findAllTraineeTrainings(
+                traineeUsername, trainerUsername, request.getFrom(), request.getTo(), request.getTrainingType());
+
+        LOG.info("Found " + trainings.size() + " trainings for trainee: " +  traineeUsername);
 
         return trainings;
     }
+
 
     @Override
     public List<Training> getTrainerTrainings(GetTrainerTrainingsRequestDTO request) {
-        LOG.info("Fetching trainer trainings for: " + request.getTrainerUsername());
+        LOG.info("Fetching trainings for trainer: {}" + request.getTrainerUsername());
 
-        // Input validation
-        if (request.getTrainerUsername() == null || request.getTrainerUsername().trim().isEmpty()) {
-            LOG.error("Invalid request: Trainer username is missing.");
-            throw new IllegalArgumentException("Trainer username cannot be empty.");
-        }
+        // Validate trainer username
+        String trainerUsername = Optional.ofNullable(request.getTrainerUsername())
+                .map(String::trim)
+                .filter(username -> !username.isEmpty())
+                .orElseThrow(() -> new IllegalArgumentException("Trainer username cannot be empty."));
 
+        // Validate date range
         if (request.getFrom() != null && request.getTo() != null && request.getFrom().after(request.getTo())) {
             LOG.error("Invalid date range: 'from' date is after 'to' date.");
             throw new IllegalArgumentException("Invalid date range: 'from' date cannot be after 'to' date.");
         }
 
-        List<Training> trainings = trainingRepository.findAllTrainerTrainings(
-                request.getTrainerUsername(),
-                request.getTraineeUsername(),
-                request.getFrom(),
-                request.getTo());
-
-        if (trainings.isEmpty()) {
-            LOG.warn("No trainings found for trainer: " + request.getTrainerUsername());
-        } else {
-            LOG.info("Found " + trainings.size() + " trainings for trainer: " + request.getTrainerUsername());
+        // Check if trainer exists
+        if (trainerService.getTrainerByUsername(trainerUsername) == null) {
+            throw new IllegalArgumentException("Trainer not found with username: " + trainerUsername);
         }
+
+        // Validate trainee (if provided)
+        String traineeUsername = Optional.ofNullable(request.getTraineeUsername())
+                .map(String::trim)
+                .orElse(null);
+
+        if (traineeUsername != null && traineeService.getTraineeByUsername(traineeUsername) == null) {
+            throw new IllegalArgumentException("Trainee not found with username: " + traineeUsername);
+        }
+
+        // Fetch trainings
+        List<Training> trainings = trainingRepository.findAllTrainerTrainings(
+                trainerUsername, traineeUsername, request.getFrom(), request.getTo());
+
+        LOG.info("Found " + trainings.size() + " trainings for trainer: " + trainerUsername);
 
         return trainings;
     }
+
 
     @Override
     public Training addTraining(AddTrainingRequestDTO request) {
         LOG.info("Adding new training...");
 
-        // Input validation
-        if (request.getTraineeUsername() == null || request.getTraineeUsername().trim().isEmpty()) {
-            LOG.error("Invalid request: Trainee username is missing.");
-            throw new IllegalArgumentException("Trainee username cannot be empty.");
-        }
+        // Validate input
+        String traineeUsername = Optional.ofNullable(request.getTraineeUsername())
+                .map(String::trim)
+                .filter(username -> !username.isEmpty())
+                .orElseThrow(() -> new IllegalArgumentException("Trainee username cannot be empty."));
 
-        if (request.getTrainerUsername() == null || request.getTrainerUsername().trim().isEmpty()) {
-            LOG.error("Invalid request: Trainer username is missing.");
-            throw new IllegalArgumentException("Trainer username cannot be empty.");
-        }
+        String trainerUsername = Optional.ofNullable(request.getTrainerUsername())
+                .map(String::trim)
+                .filter(username -> !username.isEmpty())
+                .orElseThrow(() -> new IllegalArgumentException("Trainer username cannot be empty."));
 
-        if (request.getTrainingTypeName() == null) {
-            LOG.error("Invalid request: Training type is missing.");
-            throw new IllegalArgumentException("Training type cannot be null.");
-        }
+        Date trainingDate = Optional.ofNullable(request.getTrainingDate())
+                .orElseThrow(() -> new IllegalArgumentException("Training date cannot be null."));
 
-        if (request.getTrainingDate() == null) {
-            LOG.error("Invalid request: Training date is missing.");
-            throw new IllegalArgumentException("Training date cannot be null.");
-        }
+        // Fetch Trainee & Trainer
+        Trainee trainee = Optional.ofNullable(traineeService.getTraineeByUsername(traineeUsername))
+                .orElseThrow(() -> new IllegalArgumentException("No trainee found with username: " + traineeUsername));
 
-        // Initialize Trainee and Trainer
-        Trainee trainee = new Trainee();
-        User traineeUser = new User();
-        traineeUser.setUsername(request.getTraineeUsername().trim()); // Trim the username
-        trainee.setUser(traineeUser);
-
-        Trainer trainer = new Trainer();
-        User trainerUser = new User();
-        trainerUser.setUsername(request.getTrainerUsername().trim()); // Trim the username
-        trainer.setUser(trainerUser);
+        Trainer trainer = Optional.ofNullable(trainerService.getTrainerByUsername(trainerUsername))
+                .orElseThrow(() -> new IllegalArgumentException("No trainer found with username: " + trainerUsername));
 
         // Fetch TrainingType
         TrainingType trainingType = trainingTypeService.findByValue(request.getTrainingTypeName())
-                .orElseThrow(() -> {
-                    LOG.error("Invalid training type: " + request.getTrainingTypeName());
-                    return new IllegalArgumentException("Invalid training type: " + request.getTrainingTypeName());
-                });
+                .orElseThrow(() -> new IllegalArgumentException("Invalid training type: " + request.getTrainingTypeName()));
 
-        // Initialize Training
+        // Create Training Object
         Training training = new Training();
-        training.setTrainee(trainee); // Initialize trainee
-        training.setTrainer(trainer); // Initialize trainer
+        training.setTrainee(trainee);
+        training.setTrainer(trainer);
         training.setTrainingType(trainingType);
-        training.setTrainingDate(request.getTrainingDate());
+        training.setTrainingDate(trainingDate);
 
-        // Save the training
+        // Save Training
         Training savedTraining = trainingRepository.save(training);
         LOG.info("Training added successfully with ID: " + savedTraining.getId());
 
-        // Create the Trainee-Trainer relationship
-        TraineeTrainer traineeTrainer = traineeTrainerService.createTraineeTrainer(
-                traineeUser.getUsername(),
-                trainerUser.getUsername()
-        );
+        // Create Trainee-Trainer Relationship
+        traineeTrainerService.createTraineeTrainer(traineeUsername, trainerUsername);
+        LOG.info("Trainer-Trainee relation created successfully.");
 
-        LOG.info("Trainer and Trainee relation added successfully " + traineeTrainer.getId());
         return savedTraining;
     }
+
+
 }

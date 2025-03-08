@@ -4,7 +4,7 @@ import com.epam.gym_crm.entity.Trainee;
 import com.epam.gym_crm.repository.TraineeRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -40,8 +40,7 @@ public class TraineeRepositoryImpl implements TraineeRepository {
     public Optional<Trainee> findByUserId(Long userId) {
         return entityManager.createQuery("SELECT t FROM Trainee t WHERE t.user.id = :userId", Trainee.class)
                 .setParameter("userId", userId)
-                .getResultStream()
-                .findFirst();
+                .getResultList().stream().findFirst();
     }
 
 }
