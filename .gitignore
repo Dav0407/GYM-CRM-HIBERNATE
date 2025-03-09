@@ -45,9 +45,4 @@ bin/
 ### macOS ###
 .DS_Store
 
-/.idea/.gitignore
-/.idea/dataSources.xml
-/.idea/misc.xml
-/.idea/inspectionProfiles/Project_Default.xml
-/.idea/sqldialects.xml
-/.idea/vcs.xml
+/.idea
