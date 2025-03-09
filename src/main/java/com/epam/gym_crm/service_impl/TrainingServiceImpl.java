@@ -130,6 +130,11 @@ public class TrainingServiceImpl implements TrainingService {
         Date trainingDate = Optional.ofNullable(request.getTrainingDate())
                 .orElseThrow(() -> new IllegalArgumentException("Training date cannot be null."));
 
+        Integer trainingDuration = Optional.ofNullable(request.getTrainingDuration())
+                .orElseThrow(() -> new IllegalArgumentException("Training duration cannot be null."));
+
+        String trainingName = Optional.ofNullable(request.getTrainingName()).orElseThrow(() -> new IllegalArgumentException("Training name cannot be null."));
+
         // Fetch Trainee & Trainer
         Trainee trainee = Optional.ofNullable(traineeService.getTraineeByUsername(traineeUsername))
                 .orElseThrow(() -> new IllegalArgumentException("No trainee found with username: " + traineeUsername));
@@ -147,6 +152,8 @@ public class TrainingServiceImpl implements TrainingService {
         training.setTrainer(trainer);
         training.setTrainingType(trainingType);
         training.setTrainingDate(trainingDate);
+        training.setTrainingDuration(trainingDuration);
+        training.setTrainingName(trainingName);
 
         // Save Training
         Training savedTraining = trainingRepository.save(training);
