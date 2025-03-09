@@ -1,4 +1,4 @@
-package com.epam.gym_crm.service_impl;
+package com.epam.gym_crm.service.service_impl;
 
 import com.epam.gym_crm.entity.TrainingType;
 import com.epam.gym_crm.repository.TrainingTypeRepository;
@@ -24,11 +24,10 @@ public class TrainingTypeServiceImpl implements TrainingTypeService {
         LOG.info("Finding TrainingType by value: " + value);
         Optional<TrainingType> trainingType = trainingTypeRepository.findByValue(value);
 
-        if (trainingType.isPresent()) {
-            LOG.info("TrainingType found: " + trainingType.get());
-        } else {
-            LOG.warn("TrainingType not found for value: " + value);
-        }
+        trainingType.ifPresentOrElse(
+                type -> LOG.info("TrainingType found: " + type),
+                () -> LOG.warn("TrainingType not found for value: " + value)
+        );
 
         return trainingType;
     }

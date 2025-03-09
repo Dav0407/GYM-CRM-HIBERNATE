@@ -1,14 +1,12 @@
-package com.epam.gym_crm.service_impl;
+package com.epam.gym_crm.service.service_impl;
 
 import com.epam.gym_crm.dto.AddTrainingRequestDTO;
 import com.epam.gym_crm.dto.GetTraineeTrainingsRequestDTO;
 import com.epam.gym_crm.dto.GetTrainerTrainingsRequestDTO;
 import com.epam.gym_crm.entity.Trainee;
-import com.epam.gym_crm.entity.TraineeTrainer;
 import com.epam.gym_crm.entity.Trainer;
 import com.epam.gym_crm.entity.Training;
 import com.epam.gym_crm.entity.TrainingType;
-import com.epam.gym_crm.entity.User;
 import com.epam.gym_crm.repository.TrainingRepository;
 import com.epam.gym_crm.service.TraineeService;
 import com.epam.gym_crm.service.TraineeTrainerService;

@@ -2,7 +2,7 @@ package com.epam.gym_crm.service_test;
 
 import com.epam.gym_crm.entity.User;
 import com.epam.gym_crm.repository.UserRepository;
-import com.epam.gym_crm.service_impl.UserServiceImpl;
+import com.epam.gym_crm.service.service_impl.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -6,7 +6,7 @@ import com.epam.gym_crm.entity.Trainer;
 import com.epam.gym_crm.repository.TraineeTrainerRepository;
 import com.epam.gym_crm.service.TraineeService;
 import com.epam.gym_crm.service.TrainerService;
-import com.epam.gym_crm.service_impl.TraineeTrainerServiceImpl;
+import com.epam.gym_crm.service.service_impl.TraineeTrainerServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

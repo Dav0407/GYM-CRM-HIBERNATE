@@ -1,4 +1,4 @@
-package com.epam.gym_crm.service_impl;
+package com.epam.gym_crm.service.service_impl;
 
 import com.epam.gym_crm.dto.CreateTrainerProfileRequestDTO;
 import com.epam.gym_crm.dto.UpdateTrainerProfileRequestDTO;

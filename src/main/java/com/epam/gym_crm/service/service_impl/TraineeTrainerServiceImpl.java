@@ -1,4 +1,4 @@
-package com.epam.gym_crm.service_impl;
+package com.epam.gym_crm.service.service_impl;
 
 import com.epam.gym_crm.entity.Trainee;
 import com.epam.gym_crm.entity.TraineeTrainer;

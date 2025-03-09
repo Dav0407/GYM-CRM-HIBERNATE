@@ -1,4 +1,4 @@
-package com.epam.gym_crm.service_impl;
+package com.epam.gym_crm.service.service_impl;
 
 import com.epam.gym_crm.dto.CreateTraineeProfileRequestDTO;
 import com.epam.gym_crm.dto.UpdateTraineeProfileRequestDTO;
@@ -73,18 +73,19 @@ public class TraineeServiceImpl implements TraineeService {
         userService.changePassword(username, oldPassword, newPassword);
     }
 
+    @Transactional
     @Override
     public Trainee updateTraineeProfile(Long id, UpdateTraineeProfileRequestDTO request) {
-
-        Trainee trainee = traineeRepository.findById(id).orElseThrow(() -> new RuntimeException("Trainee not found with ID: " + id));
+        Trainee trainee = traineeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Trainee not found with ID: " + id));
 
         trainee.getUser().setFirstName(request.getFirstName().trim());
         trainee.getUser().setLastName(request.getLastName().trim());
         trainee.getUser().setUsername(request.getUsername().trim());
-
         trainee.setDateOfBirth(request.getDateOfBirth());
         trainee.setAddress(request.getAddress().trim());
-        return traineeRepository.save(trainee);
+
+        return trainee;
     }
 
     @Override

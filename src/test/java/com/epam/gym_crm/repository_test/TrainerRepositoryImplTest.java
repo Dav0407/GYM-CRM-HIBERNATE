@@ -42,11 +42,10 @@ public class TrainerRepositoryImplTest {
     private TrainerRepositoryImpl trainerRepository;
 
     private Trainer trainer;
-    private User user;
 
     @BeforeEach
     public void setUp() {
-        user = new User();
+        User user = new User();
         user.setId(1L);
         user.setFirstName("John");
         user.setLastName("Doe");

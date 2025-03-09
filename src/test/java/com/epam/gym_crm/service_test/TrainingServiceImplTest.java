@@ -13,7 +13,7 @@ import com.epam.gym_crm.service.TraineeService;
 import com.epam.gym_crm.service.TraineeTrainerService;
 import com.epam.gym_crm.service.TrainerService;
 import com.epam.gym_crm.service.TrainingTypeService;
-import com.epam.gym_crm.service_impl.TrainingServiceImpl;
+import com.epam.gym_crm.service.service_impl.TrainingServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

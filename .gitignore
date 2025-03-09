@@ -1,6 +1,10 @@
+# Ignore Gradle's build output but keep the wrapper
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+!gradlew
+!gradlew.bat
 !**/src/main/**/build/
 !**/src/test/**/build/
 
@@ -35,19 +39,9 @@ bin/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
+### Visual Studio Code ###
 .vscode/
 
-### Mac OS ###
+### macOS ###
 .DS_Store
-/.idea/.gitignore
-/.idea/gradle.xml
-/gradle/wrapper/gradle-wrapper.jar
-/gradlew
-/gradlew.bat
-/.idea/misc.xml
 
-/gradle
-/.idea/dataSources.xml
-/.idea/inspectionProfiles/Project_Default.xml
-/.idea/vcs.xml

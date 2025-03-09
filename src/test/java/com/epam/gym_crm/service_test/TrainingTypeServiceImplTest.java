@@ -2,7 +2,7 @@ package com.epam.gym_crm.service_test;
 
 import com.epam.gym_crm.entity.TrainingType;
 import com.epam.gym_crm.repository.TrainingTypeRepository;
-import com.epam.gym_crm.service_impl.TrainingTypeServiceImpl;
+import com.epam.gym_crm.service.service_impl.TrainingTypeServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

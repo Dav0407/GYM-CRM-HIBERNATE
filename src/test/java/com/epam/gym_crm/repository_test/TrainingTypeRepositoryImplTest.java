@@ -1,6 +1,7 @@
-package com.epam.gym_crm.repository_impl;
+package com.epam.gym_crm.repository_test;
 
 import com.epam.gym_crm.entity.TrainingType;
+import com.epam.gym_crm.repository_impl.TrainingTypeRepositoryImpl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.TypedQuery;
