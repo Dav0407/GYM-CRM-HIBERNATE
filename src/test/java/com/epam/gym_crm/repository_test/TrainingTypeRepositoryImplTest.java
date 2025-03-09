@@ -82,9 +82,7 @@ public class TrainingTypeRepositoryImplTest {
         doThrow(new RuntimeException("Database error")).when(entityManager).persist(any(TrainingType.class));
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            trainingTypeRepository.save(trainingType);
-        });
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> trainingTypeRepository.save(trainingType));
 
         assertTrue(exception.getMessage().contains("Failed to save TrainingType"));
     }
@@ -96,9 +94,7 @@ public class TrainingTypeRepositoryImplTest {
         doThrow(new RuntimeException("Database error")).when(entityManager).merge(any(TrainingType.class));
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            trainingTypeRepository.save(trainingType);
-        });
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> trainingTypeRepository.save(trainingType));
 
         assertTrue(exception.getMessage().contains("Failed to save TrainingType"));
     }

@@ -91,9 +91,7 @@ public class TrainerRepositoryImplTest {
         doThrow(new RuntimeException("Database error")).when(entityManager).persist(any(Trainer.class));
 
         // Act & Assert
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            trainerRepository.save(trainer);
-        });
+        Exception exception = assertThrows(RuntimeException.class, () -> trainerRepository.save(trainer));
 
         assertTrue(exception.getMessage().contains("Failed to save Trainer"));
     }

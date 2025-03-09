@@ -91,9 +91,7 @@ public class UserRepositoryImplTest {
         doThrow(new RuntimeException("Database error")).when(entityManager).persist(any(User.class));
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userRepository.save(newUser);
-        });
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> userRepository.save(newUser));
 
         // Verify the exception message
         assertTrue(exception.getMessage().contains("Failed to save user"));
@@ -240,9 +238,7 @@ public class UserRepositoryImplTest {
         when(typedQuery.getResultList()).thenReturn(Collections.emptyList());
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userRepository.updatePassword(username, newPassword);
-        });
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> userRepository.updatePassword(username, newPassword));
 
         assertTrue(exception.getMessage().contains("User not found with username"));
         verify(entityManager, never()).merge(any(User.class));

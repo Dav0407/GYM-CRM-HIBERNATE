@@ -106,9 +106,7 @@ public class UserServiceImplTest {
     void testChangePasswordWithIncorrectOldPassword() {
         when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(user));
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            userService.changePassword("john.doe", "wrongpassword", "newpassword");
-        });
+        assertThrows(IllegalArgumentException.class, () -> userService.changePassword("john.doe", "wrongpassword", "newpassword"));
 
         verify(userRepository, never()).updatePassword(anyString(), anyString());
     }
@@ -166,9 +164,7 @@ public class UserServiceImplTest {
     void testDeleteNonExistentUser() {
         when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> {
-            userService.deleteUser("nonexistent");
-        });
+        assertThrows(RuntimeException.class, () -> userService.deleteUser("nonexistent"));
 
         verify(userRepository, never()).deleteByUsername(anyString());
     }
@@ -188,9 +184,7 @@ public class UserServiceImplTest {
     void testGetUserByUsernameNotFound() {
         when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> {
-            userService.getUserByUsername("nonexistent");
-        });
+        assertThrows(RuntimeException.class, () -> userService.getUserByUsername("nonexistent"));
 
         verify(userRepository, times(1)).findByUsername("nonexistent");
     }
