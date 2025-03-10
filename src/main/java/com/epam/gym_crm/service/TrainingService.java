@@ -1,14 +1,14 @@
 package com.epam.gym_crm.service;
 
-import com.epam.gym_crm.dto.AddTrainingRequestDTO;
-import com.epam.gym_crm.dto.GetTraineeTrainingsRequestDTO;
-import com.epam.gym_crm.dto.GetTrainerTrainingsRequestDTO;
-import com.epam.gym_crm.entity.Training;
+import com.epam.gym_crm.dto.request.AddTrainingRequestDTO;
+import com.epam.gym_crm.dto.request.GetTraineeTrainingsRequestDTO;
+import com.epam.gym_crm.dto.request.GetTrainerTrainingsRequestDTO;
+import com.epam.gym_crm.dto.response.TrainingResponseDTO;
 
 import java.util.List;
 
 public interface TrainingService {
-    List<Training> getTraineeTrainings(GetTraineeTrainingsRequestDTO request);
-    List<Training> getTrainerTrainings(GetTrainerTrainingsRequestDTO request);
-    Training addTraining(AddTrainingRequestDTO request);
+    List<TrainingResponseDTO> getTraineeTrainings(GetTraineeTrainingsRequestDTO request);
+    List<TrainingResponseDTO> getTrainerTrainings(GetTrainerTrainingsRequestDTO request);
+    TrainingResponseDTO addTraining(AddTrainingRequestDTO request);
 }

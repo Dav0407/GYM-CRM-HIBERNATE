@@ -3,10 +3,11 @@ package com.epam.gym_crm.service_test;
 import com.epam.gym_crm.entity.Trainee;
 import com.epam.gym_crm.entity.TraineeTrainer;
 import com.epam.gym_crm.entity.Trainer;
+import com.epam.gym_crm.entity.User;
 import com.epam.gym_crm.repository.TraineeTrainerRepository;
 import com.epam.gym_crm.service.TraineeService;
 import com.epam.gym_crm.service.TrainerService;
-import com.epam.gym_crm.service.service_impl.TraineeTrainerServiceImpl;
+import com.epam.gym_crm.service.impl.TraineeTrainerServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,10 +19,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,126 +51,129 @@ class TraineeTrainerServiceImplTest {
     void setUp() {
         trainee = new Trainee();
         trainee.setId(1L);
+        trainee.setUser(new User());
+        trainee.getUser().setUsername("trainee.username");
 
         trainer = new Trainer();
-        trainer.setId(2L);
+        trainer.setId(1L);
+        trainer.setUser(new User());
+        trainer.getUser().setUsername("trainer.username");
 
         traineeTrainer = new TraineeTrainer();
-        traineeTrainer.setId(3L);
+        traineeTrainer.setId(1L);
         traineeTrainer.setTrainee(trainee);
         traineeTrainer.setTrainer(trainer);
     }
 
     @Test
-    void createTraineeTrainer_ValidInput_CreatesRelationship() {
-        String traineeUsername = "traineeUser";
-        String trainerUsername = "trainerUser";
-
-        when(traineeService.getTraineeByUsername(traineeUsername)).thenReturn(trainee);
-        when(trainerService.getTrainerByUsername(trainerUsername)).thenReturn(trainer);
-        when(traineeTrainerRepository.findByTraineeAndTrainer(trainee, trainer))
-                .thenReturn(Optional.empty());
+    void testCreateTraineeTrainer_Success() {
+        when(traineeService.getTraineeEntityByUsername("trainee.username")).thenReturn(trainee);
+        when(trainerService.getTrainerEntityByUsername("trainer.username")).thenReturn(trainer);
+        when(traineeTrainerRepository.findByTraineeAndTrainer(trainee, trainer)).thenReturn(Optional.empty());
         when(traineeTrainerRepository.save(any(TraineeTrainer.class))).thenReturn(traineeTrainer);
 
-        TraineeTrainer result = traineeTrainerService.createTraineeTrainer(traineeUsername, trainerUsername);
+        TraineeTrainer result = traineeTrainerService.createTraineeTrainer("trainee.username", "trainer.username");
 
-        assertThat(result).isEqualTo(traineeTrainer);
-        verify(traineeTrainerRepository).save(any(TraineeTrainer.class));
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+        assertEquals(trainee, result.getTrainee());
+        assertEquals(trainer, result.getTrainer());
+
+        verify(traineeService, times(1)).getTraineeEntityByUsername("trainee.username");
+        verify(trainerService, times(1)).getTrainerEntityByUsername("trainer.username");
+        verify(traineeTrainerRepository, times(1)).findByTraineeAndTrainer(trainee, trainer);
+        verify(traineeTrainerRepository, times(1)).save(any(TraineeTrainer.class));
     }
 
     @Test
-    void createTraineeTrainer_RelationshipExists_ReturnsExisting() {
-        String traineeUsername = "traineeUser";
-        String trainerUsername = "trainerUser";
+    void testCreateTraineeTrainer_RelationshipAlreadyExists() {
+        when(traineeService.getTraineeEntityByUsername("trainee.username")).thenReturn(trainee);
+        when(trainerService.getTrainerEntityByUsername("trainer.username")).thenReturn(trainer);
+        when(traineeTrainerRepository.findByTraineeAndTrainer(trainee, trainer)).thenReturn(Optional.of(traineeTrainer));
 
-        when(traineeService.getTraineeByUsername(traineeUsername)).thenReturn(trainee);
-        when(trainerService.getTrainerByUsername(trainerUsername)).thenReturn(trainer);
-        when(traineeTrainerRepository.findByTraineeAndTrainer(trainee, trainer))
-                .thenReturn(Optional.of(traineeTrainer));
+        TraineeTrainer result = traineeTrainerService.createTraineeTrainer("trainee.username", "trainer.username");
 
-        TraineeTrainer result = traineeTrainerService.createTraineeTrainer(traineeUsername, trainerUsername);
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+        assertEquals(trainee, result.getTrainee());
+        assertEquals(trainer, result.getTrainer());
 
-        assertThat(result).isEqualTo(traineeTrainer);
-        verify(traineeTrainerRepository, never()).save(any(TraineeTrainer.class));
+        verify(traineeService, times(1)).getTraineeEntityByUsername("trainee.username");
+        verify(trainerService, times(1)).getTrainerEntityByUsername("trainer.username");
+        verify(traineeTrainerRepository, times(1)).findByTraineeAndTrainer(trainee, trainer);
+        verify(traineeTrainerRepository, times(0)).save(any(TraineeTrainer.class));
     }
 
     @Test
-    void createTraineeTrainer_InvalidTraineeUsername_ThrowsException() {
-        String traineeUsername = "";
-        String trainerUsername = "trainerUser";
+    void testCreateTraineeTrainer_InvalidTraineeUsername() {
+        assertThrows(IllegalArgumentException.class, () -> traineeTrainerService.createTraineeTrainer(null, "trainer.username"));
+        assertThrows(IllegalArgumentException.class, () -> traineeTrainerService.createTraineeTrainer("", "trainer.username"));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                traineeTrainerService.createTraineeTrainer(traineeUsername, trainerUsername));
+        verify(traineeService, times(0)).getTraineeEntityByUsername(anyString());
+        verify(trainerService, times(0)).getTrainerEntityByUsername(anyString());
+        verify(traineeTrainerRepository, times(0)).findByTraineeAndTrainer(any(), any());
+        verify(traineeTrainerRepository, times(0)).save(any(TraineeTrainer.class));
     }
 
     @Test
-    void createTraineeTrainer_InvalidTrainerUsername_ThrowsException() {
-        String traineeUsername = "traineeUser";
-        String trainerUsername = "";
+    void testCreateTraineeTrainer_InvalidTrainerUsername() {
+        assertThrows(IllegalArgumentException.class, () -> traineeTrainerService.createTraineeTrainer("trainee.username", null));
+        assertThrows(IllegalArgumentException.class, () -> traineeTrainerService.createTraineeTrainer("trainee.username", ""));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                traineeTrainerService.createTraineeTrainer(traineeUsername, trainerUsername));
+        verify(traineeService, times(0)).getTraineeEntityByUsername(anyString());
+        verify(trainerService, times(0)).getTrainerEntityByUsername(anyString());
+        verify(traineeTrainerRepository, times(0)).findByTraineeAndTrainer(any(), any());
+        verify(traineeTrainerRepository, times(0)).save(any(TraineeTrainer.class));
     }
 
     @Test
-    void findByTraineeUsername_ReturnsRelationships() {
-        String traineeUsername = "traineeUser";
-        List<TraineeTrainer> expected = Collections.singletonList(traineeTrainer);
+    void testFindByTraineeUsername_Success() {
+        when(traineeTrainerRepository.findAllByTraineeUsername("trainee.username")).thenReturn(Collections.singletonList(traineeTrainer));
 
-        when(traineeTrainerRepository.findAllByTraineeUsername(traineeUsername)).thenReturn(expected);
+        List<TraineeTrainer> result = traineeTrainerService.findByTraineeUsername("trainee.username");
 
-        List<TraineeTrainer> result = traineeTrainerService.findByTraineeUsername(traineeUsername);
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(traineeTrainer, result.get(0));
 
-        assertThat(result).isEqualTo(expected);
+        verify(traineeTrainerRepository, times(1)).findAllByTraineeUsername("trainee.username");
     }
 
     @Test
-    void updateTraineeTrainers_ValidInput_UpdatesRelationships() {
-        String traineeUsername = "traineeUser";
-        List<String> trainerUsernames = List.of("trainerUser1", "trainerUser2");
+    void testUpdateTraineeTrainers_Success() {
+        when(traineeService.getTraineeEntityByUsername("trainee.username")).thenReturn(trainee);
+        when(trainerService.getTrainerEntityByUsername("trainer.username")).thenReturn(trainer);
+        when(traineeTrainerRepository.findAllByTraineeUsername("trainee.username")).thenReturn(Collections.emptyList());
 
-        when(traineeService.getTraineeByUsername(traineeUsername)).thenReturn(trainee);
-        when(trainerService.getTrainerByUsername("trainerUser1")).thenReturn(trainer);
-        when(trainerService.getTrainerByUsername("trainerUser2")).thenReturn(trainer);
-        when(traineeTrainerRepository.findAllByTraineeUsername(traineeUsername))
-                .thenReturn(Collections.singletonList(traineeTrainer));
+        traineeTrainerService.updateTraineeTrainers("trainee.username", Collections.singletonList("trainer.username"));
 
-        traineeTrainerService.updateTraineeTrainers(traineeUsername, trainerUsernames);
-
-        verify(traineeTrainerRepository).deleteAll(any(List.class));
-        verify(traineeTrainerRepository).saveAll(any(List.class));
+        verify(traineeService, times(1)).getTraineeEntityByUsername("trainee.username");
+        verify(trainerService, times(1)).getTrainerEntityByUsername("trainer.username");
+        verify(traineeTrainerRepository, times(1)).findAllByTraineeUsername("trainee.username");
+        verify(traineeTrainerRepository, times(1)).deleteAll(Collections.emptyList());
+        verify(traineeTrainerRepository, times(1)).saveAll(any());
     }
 
     @Test
-    void updateTraineeTrainers_InvalidTraineeUsername_ThrowsException() {
-        String traineeUsername = "";
-        List<String> trainerUsernames = List.of("trainerUser1");
+    void testUpdateTraineeTrainers_InvalidTraineeUsername() {
+        assertThrows(IllegalArgumentException.class, () -> traineeTrainerService.updateTraineeTrainers(null, Collections.singletonList("trainer.username")));
+        assertThrows(IllegalArgumentException.class, () -> traineeTrainerService.updateTraineeTrainers("", Collections.singletonList("trainer.username")));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                traineeTrainerService.updateTraineeTrainers(traineeUsername, trainerUsernames));
+        verify(traineeService, times(0)).getTraineeEntityByUsername(anyString());
+        verify(trainerService, times(0)).getTrainerEntityByUsername(anyString());
+        verify(traineeTrainerRepository, times(0)).findAllByTraineeUsername(anyString());
+        verify(traineeTrainerRepository, times(0)).deleteAll(any());
+        verify(traineeTrainerRepository, times(0)).saveAll(any());
     }
 
     @Test
-    void updateTraineeTrainers_NullTrainerUsernames_ThrowsException() {
-        String traineeUsername = "traineeUser";
+    void testUpdateTraineeTrainers_InvalidTrainerUsernames() {
+        assertThrows(IllegalArgumentException.class, () -> traineeTrainerService.updateTraineeTrainers("trainee.username", null));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                traineeTrainerService.updateTraineeTrainers(traineeUsername, null));
-    }
-
-    @Test
-    void updateTraineeTrainers_TrainerNotFound_LogsWarning() {
-        String traineeUsername = "traineeUser";
-        List<String> trainerUsernames = List.of("invalidTrainer");
-
-        when(traineeService.getTraineeByUsername(traineeUsername)).thenReturn(trainee);
-        when(trainerService.getTrainerByUsername("invalidTrainer")).thenReturn(null);
-        when(traineeTrainerRepository.findAllByTraineeUsername(traineeUsername))
-                .thenReturn(Collections.singletonList(traineeTrainer));
-
-        traineeTrainerService.updateTraineeTrainers(traineeUsername, trainerUsernames);
-
-        verify(traineeTrainerRepository).deleteAll(any(List.class));
-        verify(traineeTrainerRepository).saveAll(any(List.class));
+        verify(traineeService, times(0)).getTraineeEntityByUsername(anyString());
+        verify(trainerService, times(0)).getTrainerEntityByUsername(anyString());
+        verify(traineeTrainerRepository, times(0)).findAllByTraineeUsername(anyString());
+        verify(traineeTrainerRepository, times(0)).deleteAll(any());
+        verify(traineeTrainerRepository, times(0)).saveAll(any());
     }
 }

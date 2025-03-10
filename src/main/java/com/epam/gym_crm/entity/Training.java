@@ -13,6 +13,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.Date;
 
@@ -20,6 +21,7 @@ import java.util.Date;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 @Builder
 @Entity
 @Table(name = "trainings")
@@ -36,16 +38,16 @@ public class Training {
     @JoinColumn(name = "trainer_id")
     private Trainer trainer;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "training_name")
     private String trainingName;
 
     @ManyToOne
     @JoinColumn(name = "training_type_id")
     private TrainingType trainingType;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "training_date")
     private Date trainingDate;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "training_duration")
     private Integer trainingDuration;
 }

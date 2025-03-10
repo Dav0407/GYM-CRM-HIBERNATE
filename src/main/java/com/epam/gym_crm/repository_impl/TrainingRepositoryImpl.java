@@ -43,10 +43,10 @@ public class TrainingRepositoryImpl implements TrainingRepository {
     public List<Training> findAllTraineeTrainings(String traineeUsername, String trainerUsername, Date from, Date to, String trainingTypeName) {
         String queryStr = "SELECT t FROM Training t WHERE t.trainee.user.username = :traineeUsername";
 
-        if (trainerUsername != null) queryStr += " AND t.trainer.username = :trainerUsername";
-        if (from != null) queryStr += " AND t.date >= :from";
-        if (to != null) queryStr += " AND t.date <= :to";
-        if (trainingTypeName != null) queryStr += " AND t.trainingType.name = :trainingTypeName";
+        if (trainerUsername != null) queryStr += " AND t.trainer.user.username = :trainerUsername";
+        if (from != null) queryStr += " AND t.trainingDate >= :from";
+        if (to != null) queryStr += " AND t.trainingDate <= :to";
+        if (trainingTypeName != null) queryStr += " AND t.trainingType.trainingTypeName = :trainingTypeName";
 
         TypedQuery<Training> query = entityManager.createQuery(queryStr, Training.class);
         query.setParameter("traineeUsername", traineeUsername);
@@ -62,9 +62,9 @@ public class TrainingRepositoryImpl implements TrainingRepository {
     public List<Training> findAllTrainerTrainings(String trainerUsername, String traineeUsername, Date from, Date to) {
         String queryStr = "SELECT t FROM Training t WHERE t.trainer.user.username = :trainerUsername";
 
-        if (traineeUsername != null) queryStr += " AND t.trainee.username = :traineeUsername";
-        if (from != null) queryStr += " AND t.date >= :from";
-        if (to != null) queryStr += " AND t.date <= :to";
+        if (traineeUsername != null) queryStr += " AND t.trainee.user.username = :traineeUsername";
+        if (from != null) queryStr += " AND t.trainingDate >= :from";
+        if (to != null) queryStr += " AND t.trainingDate <= :to";
 
         TypedQuery<Training> query = entityManager.createQuery(queryStr, Training.class);
         query.setParameter("trainerUsername", trainerUsername);

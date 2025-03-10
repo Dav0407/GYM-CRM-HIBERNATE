@@ -1,4 +1,4 @@
-package com.epam.gym_crm.dto;
+package com.epam.gym_crm.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,10 +13,9 @@ import java.util.Date;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class GetTraineeTrainingsRequestDTO {
-    private String traineeUsername;
-    private String trainerUsername;
-    private Date from;
-    private Date to;
-    private String trainingType;
+public class CreateTraineeProfileRequestDTO {
+    private String firstName;
+    private String lastName;
+    private Date dateOfBirth;
+    private String address;
 }

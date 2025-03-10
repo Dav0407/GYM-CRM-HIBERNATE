@@ -1,11 +1,21 @@
 package com.epam.gym_crm;
 
 import com.epam.gym_crm.config.ApplicationConfig;
-import com.epam.gym_crm.dto.*;
-import com.epam.gym_crm.entity.Trainee;
-import com.epam.gym_crm.entity.Trainer;
-import com.epam.gym_crm.entity.Training;
-import com.epam.gym_crm.service.*;
+import com.epam.gym_crm.dto.request.AddTrainingRequestDTO;
+import com.epam.gym_crm.dto.request.CreateTraineeProfileRequestDTO;
+import com.epam.gym_crm.dto.request.CreateTrainerProfileRequestDTO;
+import com.epam.gym_crm.dto.request.GetTraineeTrainingsRequestDTO;
+import com.epam.gym_crm.dto.request.GetTrainerTrainingsRequestDTO;
+import com.epam.gym_crm.dto.request.UpdateTraineeProfileRequestDTO;
+import com.epam.gym_crm.dto.request.UpdateTrainerProfileRequestDTO;
+import com.epam.gym_crm.dto.response.TraineeResponseDTO;
+import com.epam.gym_crm.dto.response.TrainerResponseDTO;
+import com.epam.gym_crm.dto.response.TrainingResponseDTO;
+import com.epam.gym_crm.service.TraineeService;
+import com.epam.gym_crm.service.TraineeTrainerService;
+import com.epam.gym_crm.service.TrainerService;
+import com.epam.gym_crm.service.TrainingService;
+import com.epam.gym_crm.service.UserService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.context.ApplicationContext;
@@ -30,7 +40,6 @@ public class SpringApplication {
     private static TrainerService trainerService;
     private static TraineeTrainerService traineeTrainerService;
     private static TrainingService trainingService;
-    private static TrainingTypeService trainingTypeService;
 
     public static void main(String[] args) {
         LOG.info("Welcome to the GYM Management System!");
@@ -63,7 +72,6 @@ public class SpringApplication {
         trainerService = context.getBean(TrainerService.class);
         traineeTrainerService = context.getBean(TraineeTrainerService.class);
         trainingService = context.getBean(TrainingService.class);
-        trainingTypeService = context.getBean(TrainingTypeService.class);
     }
 
     private static void displayMainMenu() {
@@ -101,9 +109,9 @@ public class SpringApplication {
             String password = SCANNER.nextLine();
             if (userService.isPasswordValid(username, password)) {
                 if ("trainee".equals(userType)) {
-                    traineeMenu((Trainee) user);
+                    traineeMenu((TraineeResponseDTO) user);
                 } else {
-                    trainerMenu((Trainer) user);
+                    trainerMenu((TrainerResponseDTO) user);
                 }
             } else {
                 System.out.println("Invalid username or password.");
@@ -113,12 +121,12 @@ public class SpringApplication {
         }
     }
 
-    private static void trainerMenu(Trainer trainer) {
+    private static void trainerMenu(TrainerResponseDTO trainer) {
         boolean loggedIn = true;
         while (loggedIn) {
             System.out.println("\nTrainer Dashboard:");
-            System.out.println(trainer.getUser().getUsername() + "\n");
-            System.out.println("Hello " + trainer.getUser().getFirstName() + " " + trainer.getUser().getLastName() + " !");
+            System.out.println(trainer.getUsername() + "\n");
+            System.out.println("Hello " + trainer.getFirstName() + " " + trainer.getLastName() + " !");
             System.out.println("1. Get trainer by username.");
             System.out.println("2. Change trainer password.");
             System.out.println("3. Update trainer profile.");
@@ -132,11 +140,23 @@ public class SpringApplication {
             int choice = getUserChoice();
             switch (choice) {
                 case 1 -> getByUsername("trainer");
-                case 2 -> changePassword(trainer.getUser().getUsername());
-                case 3 -> updateTrainerProfile(trainer);
-                case 4 -> switchStatus("trainer", trainer.getUser().getUsername());
+                case 2 -> {
+                    changePassword(trainer.getUsername());
+                    trainer = fetchUpdatedTrainer(trainer.getUsername()); // Refresh trainer object
+                }
+                case 3 -> {
+                    updateTrainerProfile(trainer);
+                    trainer = fetchUpdatedTrainer(trainer.getUsername()); // Refresh trainer object
+                }
+                case 4 -> {
+                    switchStatus("trainer", trainer.getUsername());
+                    trainer = fetchUpdatedTrainer(trainer.getUsername()); // Refresh trainer object
+                }
                 case 5 -> getUnassignedTrainers(trainer);
-                case 6 -> addTraining(trainer);
+                case 6 -> {
+                    addTraining(trainer);
+                    trainer = fetchUpdatedTrainer(trainer.getUsername()); // Refresh trainer object
+                }
                 case 7 -> getTrainerTrainingList(trainer);
                 case 8 -> loggedIn = false;
                 default -> System.out.println("Invalid choice.");
@@ -144,7 +164,12 @@ public class SpringApplication {
         }
     }
 
-    private static void traineeMenu(Trainee trainee) {
+    private static TrainerResponseDTO fetchUpdatedTrainer(String username) {
+        return trainerService.getTrainerByUsername(username);
+    }
+
+
+    private static void traineeMenu(TraineeResponseDTO trainee) {
         boolean loggedIn = true;
         while (loggedIn) {
             System.out.println("\nTrainee Dashboard:");
@@ -159,33 +184,54 @@ public class SpringApplication {
             System.out.print("Enter your choice: ");
 
             int choice = getUserChoice();
+
             switch (choice) {
                 case 1 -> getByUsername("trainee");
-                case 2 -> changePassword(trainee.getUser().getUsername());
-                case 3 -> updateTraineeProfile(trainee);
-                case 4 -> switchStatus("trainee", trainee.getUser().getUsername());
-                case 5 -> deleteTrainee();
+                case 2 -> {
+                    changePassword(trainee.getUsername());
+                    trainee = fetchUpdatedTrainee(trainee.getUsername()); // Refresh trainee object
+                }
+                case 3 -> {
+                    updateTraineeProfile(trainee);
+                    trainee = fetchUpdatedTrainee(trainee.getUsername()); // Refresh trainee object
+                }
+                case 4 -> {
+                    switchStatus("trainee", trainee.getUsername());
+                    trainee = fetchUpdatedTrainee(trainee.getUsername()); // Refresh trainee object
+                }
+                case 5 -> {
+                    deleteTrainee();
+                    loggedIn = false; // Exit after deletion
+                }
                 case 6 -> getTraineeTrainingList(trainee);
-                case 7 -> updateTrainersList(trainee);
+                case 7 -> {
+                    updateTrainersList(trainee);
+                    trainee = fetchUpdatedTrainee(trainee.getUsername()); // Refresh trainee object
+                }
                 case 8 -> loggedIn = false;
                 default -> System.out.println("Invalid choice.");
             }
         }
     }
 
+    private static TraineeResponseDTO fetchUpdatedTrainee(String username) {
+        return traineeService.getTraineeByUsername(username);
+    }
+
+
     private static void getByUsername(String userType) {
         System.out.println("Username:");
         String username = SCANNER.nextLine();
 
         if ("trainee".equals(userType)) {
-            Trainee trainee = traineeService.getTraineeByUsername(username);
+            TraineeResponseDTO trainee = traineeService.getTraineeByUsername(username);
             if (trainee != null) {
                 LOG.info(trainee.toString());
             } else {
                 LOG.error("Trainee not found.");
             }
         } else if ("trainer".equals(userType)) {
-            Trainer trainer = trainerService.getTrainerByUsername(username);
+            TrainerResponseDTO trainer = trainerService.getTrainerByUsername(username);
             if (trainer != null) {
                 LOG.info(trainer.toString());
             } else {
@@ -239,7 +285,7 @@ public class SpringApplication {
         return SCANNER.nextLine();
     }
 
-    private static void getTrainerTrainingList(Trainer trainer) {
+    private static void getTrainerTrainingList(TrainerResponseDTO trainer) {
         System.out.println("Enter trainee username: ");
         String username = SCANNER.nextLine();
 
@@ -247,7 +293,7 @@ public class SpringApplication {
         Date to = readDate("Enter date to (yyyy-MM-dd): ");
 
         GetTrainerTrainingsRequestDTO request = GetTrainerTrainingsRequestDTO.builder()
-                .TrainerUsername(trainer.getUser().getUsername())
+                .TrainerUsername(trainer.getUsername())
                 .TraineeUsername(username)
                 .from(from)
                 .to(to)
@@ -256,7 +302,7 @@ public class SpringApplication {
         displayTrainingList(trainingService.getTrainerTrainings(request));
     }
 
-    private static void getTraineeTrainingList(Trainee trainee) {
+    private static void getTraineeTrainingList(TraineeResponseDTO trainee) {
         System.out.println("Enter trainer username: ");
         String trainerUsername = SCANNER.nextLine();
 
@@ -265,7 +311,7 @@ public class SpringApplication {
         String type = readTrainingType();
 
         GetTraineeTrainingsRequestDTO request = GetTraineeTrainingsRequestDTO.builder()
-                .traineeUsername(trainee.getUser().getUsername())
+                .traineeUsername(trainee.getUsername())
                 .trainerUsername(trainerUsername)
                 .from(from)
                 .to(to)
@@ -275,14 +321,14 @@ public class SpringApplication {
         displayTrainingList(trainingService.getTraineeTrainings(request));
     }
 
-    private static void displayTrainingList(List<Training> trainings) {
+    private static void displayTrainingList(List<TrainingResponseDTO> trainings) {
         for (int i = 0; i < trainings.size(); i++) {
             System.out.println("Training " + i + ": " + trainings.get(i));
         }
         System.out.println();
     }
 
-    private static void addTraining(Trainer trainer) {
+    private static void addTraining(TrainerResponseDTO trainer) {
         System.out.println("Enter your training name: ");
         String trainingName = SCANNER.nextLine();
 
@@ -297,7 +343,7 @@ public class SpringApplication {
 
         AddTrainingRequestDTO request = AddTrainingRequestDTO.builder()
                 .trainingName(trainingName)
-                .trainerUsername(trainer.getUser().getUsername())
+                .trainerUsername(trainer.getUsername())
                 .traineeUsername(traineeUsername)
                 .trainingTypeName(trainingType)
                 .trainingDate(trainingDate)
@@ -308,15 +354,15 @@ public class SpringApplication {
         System.out.println("Training added successfully.");
     }
 
-    private static void getUnassignedTrainers(Trainer trainer) {
-        List<Trainer> list = trainerService.getNotAssignedTrainersByTraineeUsername(trainer.getUser().getUsername());
+    private static void getUnassignedTrainers(TrainerResponseDTO trainer) {
+        List<TrainerResponseDTO> list = trainerService.getNotAssignedTrainersByTraineeUsername(trainer.getUsername());
         for (int i = 0; i < list.size(); i++) {
             System.out.println("Trainer " + i + ": " + list.get(i));
         }
         System.out.println();
     }
 
-    private static void updateTrainerProfile(Trainer trainer) {
+    private static void updateTrainerProfile(TrainerResponseDTO trainer) {
         System.out.println("Enter new first name: ");
         String firstName = SCANNER.nextLine();
 
@@ -335,7 +381,7 @@ public class SpringApplication {
                 .trainingTypeName(specialization)
                 .build();
 
-        Trainer updatedTrainer = trainerService.updateTrainerProfile(trainer.getId(), request);
+        TrainerResponseDTO updatedTrainer = trainerService.updateTrainerProfile(trainer.getId(), request);
 
         if (updatedTrainer != null) {
             LOG.info("Trainer updated successfully: " + updatedTrainer);
@@ -344,7 +390,7 @@ public class SpringApplication {
         }
     }
 
-    private static void updateTraineeProfile(Trainee trainee) {
+    private static void updateTraineeProfile(TraineeResponseDTO trainee) {
         System.out.println("Enter your new first name: ");
         String firstName = SCANNER.nextLine();
 
@@ -367,7 +413,7 @@ public class SpringApplication {
                 .address(address)
                 .build();
 
-        Trainee updatedTrainee = traineeService.updateTraineeProfile(trainee.getId(), request);
+        TraineeResponseDTO updatedTrainee = traineeService.updateTraineeProfile(trainee.getId(), request);
         if (updatedTrainee != null) {
             LOG.info("Trainee updated successfully: " + updatedTrainee);
         } else {
@@ -375,7 +421,7 @@ public class SpringApplication {
         }
     }
 
-    private static void updateTrainersList(Trainee trainee) {
+    private static void updateTrainersList(TraineeResponseDTO trainee) {
         System.out.println("Enter your trainer usernames list as this format {username1, username2, username3, username4}: ");
         String input = SCANNER.nextLine();
 
@@ -385,7 +431,7 @@ public class SpringApplication {
                 .filter(username -> !username.isEmpty())
                 .toList();
 
-        traineeTrainerService.updateTraineeTrainers(trainee.getUser().getUsername(), usernames);
+        traineeTrainerService.updateTraineeTrainers(trainee.getUsername(), usernames);
         System.out.println("Trainers list updated successfully.");
     }
 
@@ -409,7 +455,7 @@ public class SpringApplication {
                 .trainingType(specialization)
                 .build();
 
-        Trainer trainer = trainerService.createTrainerProfile(request);
+        TrainerResponseDTO trainer = trainerService.createTrainerProfile(request);
         System.out.println("Trainer created: " + trainer);
     }
 
@@ -430,7 +476,7 @@ public class SpringApplication {
                 .dateOfBirth(dateOfBirth)
                 .build();
 
-        Trainee trainee = traineeService.createTraineeProfile(request);
+        TraineeResponseDTO trainee = traineeService.createTraineeProfile(request);
         System.out.println("Trainee created: " + trainee);
     }
 }

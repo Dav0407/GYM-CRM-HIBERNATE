@@ -1,8 +1,11 @@
 package com.epam.gym_crm.service_test;
 
-import com.epam.gym_crm.dto.AddTrainingRequestDTO;
-import com.epam.gym_crm.dto.GetTraineeTrainingsRequestDTO;
-import com.epam.gym_crm.dto.GetTrainerTrainingsRequestDTO;
+import com.epam.gym_crm.dto.request.AddTrainingRequestDTO;
+import com.epam.gym_crm.dto.request.GetTraineeTrainingsRequestDTO;
+import com.epam.gym_crm.dto.request.GetTrainerTrainingsRequestDTO;
+import com.epam.gym_crm.dto.response.TraineeResponseDTO;
+import com.epam.gym_crm.dto.response.TrainerResponseDTO;
+import com.epam.gym_crm.dto.response.TrainingResponseDTO;
 import com.epam.gym_crm.entity.Trainee;
 import com.epam.gym_crm.entity.Trainer;
 import com.epam.gym_crm.entity.Training;
@@ -13,7 +16,7 @@ import com.epam.gym_crm.service.TraineeService;
 import com.epam.gym_crm.service.TraineeTrainerService;
 import com.epam.gym_crm.service.TrainerService;
 import com.epam.gym_crm.service.TrainingTypeService;
-import com.epam.gym_crm.service.service_impl.TrainingServiceImpl;
+import com.epam.gym_crm.service.impl.TrainingServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,8 +24,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -31,12 +33,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class TrainingServiceImplTest {
+class TrainingServiceImplTest {
 
     @Mock
     private TrainingRepository trainingRepository;
@@ -56,310 +60,451 @@ public class TrainingServiceImplTest {
     @InjectMocks
     private TrainingServiceImpl trainingService;
 
-    private Trainee trainee;
-    private Trainer trainer;
-    private TrainingType trainingType;
+    private Trainee traineeEntity;
+    private Trainer trainerEntity;
+    private TraineeResponseDTO traineeResponseDTO;
+    private TrainerResponseDTO trainerResponseDTO;
     private Training training;
-    private Date fromDate;
-    private Date toDate;
+    private TrainingType trainingType;
+    private Date trainingDate;
 
     @BeforeEach
-    public void setup() {
-        // Create test data
+    void setUp() {
+        trainingDate = new Date();
+
+        // Create User entities
         User traineeUser = new User();
-        traineeUser.setId(1L);
-        traineeUser.setFirstName("John");
-        traineeUser.setLastName("Doe");
-        traineeUser.setUsername("john.doe");
+        traineeUser.setUsername("trainee.username");
 
         User trainerUser = new User();
-        trainerUser.setId(2L);
-        trainerUser.setFirstName("Jane");
-        trainerUser.setLastName("Smith");
-        trainerUser.setUsername("jane.smith");
+        trainerUser.setUsername("trainer.username");
 
-        trainee = new Trainee();
-        trainee.setId(1L);
-        trainee.setUser(traineeUser);
+        // Create entities
+        traineeEntity = new Trainee();
+        traineeEntity.setId(1L);
+        traineeEntity.setUser(traineeUser);
+
+        trainerEntity = new Trainer();
+        trainerEntity.setId(1L);
+        trainerEntity.setUser(trainerUser);
 
         trainingType = new TrainingType();
         trainingType.setId(1L);
         trainingType.setTrainingTypeName("Cardio");
 
-        trainer = new Trainer();
-        trainer.setId(1L);
-        trainer.setUser(trainerUser);
-        trainer.setSpecialization(trainingType);
-
         training = new Training();
         training.setId(1L);
-        training.setTrainee(trainee);
-        training.setTrainer(trainer);
+        training.setTrainee(traineeEntity);
+        training.setTrainer(trainerEntity);
         training.setTrainingType(trainingType);
-        training.setTrainingName("Morning Cardio");
+        training.setTrainingDate(trainingDate);
         training.setTrainingDuration(60);
+        training.setTrainingName("Morning Run");
 
-        // Setup dates
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(2023, Calendar.JANUARY, 1);
-        fromDate = calendar.getTime();
+        // Create response DTOs
+        traineeResponseDTO = new TraineeResponseDTO();
+        traineeResponseDTO.setId(traineeEntity.getId());
+        traineeResponseDTO.setUsername(traineeEntity.getUser().getUsername());
 
-        calendar.set(2023, Calendar.DECEMBER, 31);
-        toDate = calendar.getTime();
-
-        training.setTrainingDate(new Date());
+        trainerResponseDTO = new TrainerResponseDTO();
+        trainerResponseDTO.setId(trainerEntity.getId());
+        trainerResponseDTO.setUsername(trainerEntity.getUser().getUsername());
     }
 
     @Test
-    public void testGetTraineeTrainings_Success() {
+    void testGetTraineeTrainings_Success() {
         // Arrange
-        String traineeUsername = "john.doe";
         GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
-        request.setTraineeUsername(traineeUsername);
-        request.setFrom(fromDate);
-        request.setTo(toDate);
-
-        List<Training> expectedTrainings = new ArrayList<>();
-        expectedTrainings.add(training);
+        request.setTraineeUsername("trainee.username");
+        request.setFrom(new Date(System.currentTimeMillis() - 1000)); // Past date
+        request.setTo(new Date());
 
         when(trainingRepository.findAllTraineeTrainings(
-                eq(traineeUsername),
-                eq(null),
-                eq(fromDate),
-                eq(toDate),
-                eq(null)))
-                .thenReturn(expectedTrainings);
+                "trainee.username", null, request.getFrom(), request.getTo(), null))
+                .thenReturn(Collections.singletonList(training));
+
+        when(traineeService.getTraineeResponseDTO(traineeEntity)).thenReturn(traineeResponseDTO);
+        when(trainerService.getTrainerResponseDTO(trainerEntity)).thenReturn(trainerResponseDTO);
 
         // Act
-        List<Training> result = trainingService.getTraineeTrainings(request);
-
-        // Assert
-        assertEquals(expectedTrainings.size(), result.size());
-        assertEquals(expectedTrainings.get(0).getId(), result.get(0).getId());
-    }
-
-    @Test
-    public void testGetTraineeTrainings_EmptyUsername() {
-        // Arrange
-        GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
-        request.setTraineeUsername("");
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> trainingService.getTraineeTrainings(request));
-    }
-
-    @Test
-    public void testGetTraineeTrainings_InvalidDateRange() {
-        // Arrange
-        GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
-        request.setTraineeUsername("john.doe");
-        request.setFrom(toDate);  // From date is after To date
-        request.setTo(fromDate);
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> trainingService.getTraineeTrainings(request));
-    }
-
-    @Test
-    public void testGetTraineeTrainings_InvalidTrainer() {
-        // Arrange
-        GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
-        request.setTraineeUsername("john.doe");
-        request.setTrainerUsername("nonexistent.trainer");
-
-        when(trainerService.getTrainerByUsername("nonexistent.trainer")).thenReturn(null);
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> trainingService.getTraineeTrainings(request));
-    }
-
-    @Test
-    public void testGetTrainerTrainings_Success() {
-        // Arrange
-        String trainerUsername = "jane.smith";
-        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
-        request.setTrainerUsername(trainerUsername);
-        request.setFrom(fromDate);
-        request.setTo(toDate);
-
-        List<Training> expectedTrainings = new ArrayList<>();
-        expectedTrainings.add(training);
-
-        when(trainerService.getTrainerByUsername(trainerUsername)).thenReturn(trainer);
-        when(trainingRepository.findAllTrainerTrainings(eq(trainerUsername), any(), eq(fromDate), eq(toDate)))
-                .thenReturn(expectedTrainings);
-
-        // Act
-        List<Training> result = trainingService.getTrainerTrainings(request);
-
-        // Assert
-        assertEquals(expectedTrainings.size(), result.size());
-        assertEquals(expectedTrainings.get(0).getId(), result.get(0).getId());
-    }
-
-    @Test
-    public void testGetTrainerTrainings_EmptyUsername() {
-        // Arrange
-        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
-        request.setTrainerUsername("");
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> trainingService.getTrainerTrainings(request));
-    }
-
-    @Test
-    public void testGetTrainerTrainings_TrainerNotFound() {
-        // Arrange
-        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
-        request.setTrainerUsername("nonexistent.trainer");
-
-        when(trainerService.getTrainerByUsername("nonexistent.trainer")).thenReturn(null);
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> trainingService.getTrainerTrainings(request));
-    }
-
-    @Test
-    public void testGetTrainerTrainings_InvalidTrainee() {
-        // Arrange
-        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
-        request.setTrainerUsername("jane.smith");
-        request.setTraineeUsername("nonexistent.trainee");
-
-        when(trainerService.getTrainerByUsername("jane.smith")).thenReturn(trainer);
-        when(traineeService.getTraineeByUsername("nonexistent.trainee")).thenReturn(null);
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> trainingService.getTrainerTrainings(request));
-    }
-
-    @Test
-    public void testAddTraining_Success() {
-        // Arrange
-        String traineeUsername = "john.doe";
-        String trainerUsername = "jane.smith";
-        String trainingTypeName = "Cardio";
-        Date trainingDate = new Date();
-        int trainingDuration = 60;
-        String trainingName = "Morning Cardio";
-
-        AddTrainingRequestDTO request = new AddTrainingRequestDTO();
-        request.setTraineeUsername(traineeUsername);
-        request.setTrainerUsername(trainerUsername);
-        request.setTrainingTypeName(trainingTypeName);
-        request.setTrainingDate(trainingDate);
-        request.setTrainingDuration(trainingDuration);
-        request.setTrainingName(trainingName);
-
-        when(traineeService.getTraineeByUsername(traineeUsername)).thenReturn(trainee);
-        when(trainerService.getTrainerByUsername(trainerUsername)).thenReturn(trainer);
-        when(trainingTypeService.findByValue(trainingTypeName)).thenReturn(Optional.of(trainingType));
-        when(trainingRepository.save(any(Training.class))).thenReturn(training);
-
-        // Act
-        Training result = trainingService.addTraining(request);
+        List<TrainingResponseDTO> result = trainingService.getTraineeTrainings(request);
 
         // Assert
         assertNotNull(result);
-        assertEquals(training.getId(), result.getId());
-        verify(traineeTrainerService).createTraineeTrainer(traineeUsername, trainerUsername);
+        assertEquals(1, result.size());
+        assertEquals(1L, result.get(0).getId());
+        assertEquals("Morning Run", result.get(0).getTrainingName());
+        assertEquals("Cardio", result.get(0).getTrainingType());
+
+        verify(trainingRepository, times(1)).findAllTraineeTrainings(
+                "trainee.username", null, request.getFrom(), request.getTo(), null);
     }
 
     @Test
-    public void testAddTraining_EmptyTraineeUsername() {
+    void testGetTraineeTrainings_InvalidTraineeUsername() {
         // Arrange
-        AddTrainingRequestDTO request = new AddTrainingRequestDTO();
+        GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
         request.setTraineeUsername("");
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(request));
+        assertThrows(IllegalArgumentException.class, () -> trainingService.getTraineeTrainings(request));
+
+        verify(trainingRepository, times(0)).findAllTraineeTrainings(
+                anyString(), anyString(), any(), any(), anyString());
     }
 
     @Test
-    public void testAddTraining_EmptyTrainerUsername() {
+    void testGetTraineeTrainings_InvalidDateRange() {
         // Arrange
-        AddTrainingRequestDTO request = new AddTrainingRequestDTO();
-        request.setTraineeUsername("john.doe");
+        GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
+        request.setTraineeUsername("trainee.username");
+        request.setFrom(new Date(System.currentTimeMillis() + 1000)); // Future date
+        request.setTo(new Date());
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> trainingService.getTraineeTrainings(request));
+
+        verify(trainingRepository, times(0)).findAllTraineeTrainings(
+                anyString(), anyString(), any(), any(), anyString());
+    }
+
+    @Test
+    void testGetTraineeTrainings_WithTrainerUsername() {
+        // Arrange
+        GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
+        request.setTraineeUsername("trainee.username");
+        request.setTrainerUsername("trainer.username");
+
+        when(trainerService.getTrainerByUsername("trainer.username")).thenReturn(trainerResponseDTO);
+        when(trainingRepository.findAllTraineeTrainings(
+                "trainee.username", "trainer.username", null, null, null))
+                .thenReturn(Collections.singletonList(training));
+
+        when(traineeService.getTraineeResponseDTO(traineeEntity)).thenReturn(traineeResponseDTO);
+        when(trainerService.getTrainerResponseDTO(trainerEntity)).thenReturn(trainerResponseDTO);
+
+        // Act
+        List<TrainingResponseDTO> result = trainingService.getTraineeTrainings(request);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(trainerService, times(1)).getTrainerByUsername("trainer.username");
+    }
+
+    @Test
+    void testGetTraineeTrainings_TrainerNotFound() {
+        // Arrange
+        GetTraineeTrainingsRequestDTO request = new GetTraineeTrainingsRequestDTO();
+        request.setTraineeUsername("trainee.username");
+        request.setTrainerUsername("non.existent.trainer");
+
+        when(trainerService.getTrainerByUsername("non.existent.trainer")).thenReturn(null);
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> trainingService.getTraineeTrainings(request));
+
+        verify(trainerService, times(1)).getTrainerByUsername("non.existent.trainer");
+        verify(trainingRepository, times(0)).findAllTraineeTrainings(
+                anyString(), anyString(), any(), any(), anyString());
+    }
+
+    @Test
+    void testGetTrainerTrainings_Success() {
+        // Arrange
+        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
+        request.setTrainerUsername("trainer.username");
+        request.setFrom(new Date(System.currentTimeMillis() - 1000)); // Past date
+        request.setTo(new Date());
+
+        // Mock the trainerService to return a valid Trainer object
+        when(trainerService.getTrainerByUsername("trainer.username")).thenReturn(trainerResponseDTO);
+
+        // Mock the trainingRepository to return a list of trainings
+        when(trainingRepository.findAllTrainerTrainings(
+                "trainer.username", null, request.getFrom(), request.getTo()))
+                .thenReturn(Collections.singletonList(training));
+
+        when(traineeService.getTraineeResponseDTO(traineeEntity)).thenReturn(traineeResponseDTO);
+        when(trainerService.getTrainerResponseDTO(trainerEntity)).thenReturn(trainerResponseDTO);
+
+        // Act
+        List<TrainingResponseDTO> result = trainingService.getTrainerTrainings(request);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(1L, result.get(0).getId());
+        assertEquals("Morning Run", result.get(0).getTrainingName());
+
+        verify(trainerService, times(1)).getTrainerByUsername("trainer.username");
+        verify(trainingRepository, times(1)).findAllTrainerTrainings(
+                "trainer.username", null, request.getFrom(), request.getTo());
+    }
+
+    @Test
+    void testGetTrainerTrainings_InvalidTrainerUsername() {
+        // Arrange
+        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
         request.setTrainerUsername("");
 
         // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(request));
+        assertThrows(IllegalArgumentException.class, () -> trainingService.getTrainerTrainings(request));
+
+        verify(trainingRepository, times(0)).findAllTrainerTrainings(
+                anyString(), anyString(), any(), any());
     }
 
     @Test
-    public void testAddTraining_NullTrainingDate() {
+    void testGetTrainerTrainings_InvalidDateRange() {
+        // Arrange
+        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
+        request.setTrainerUsername("trainer.username");
+        request.setFrom(new Date(System.currentTimeMillis() + 1000)); // Future date
+        request.setTo(new Date());
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> trainingService.getTrainerTrainings(request));
+
+        verify(trainingRepository, times(0)).findAllTrainerTrainings(
+                anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    void testGetTrainerTrainings_TrainerNotFound() {
+        // Arrange
+        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
+        request.setTrainerUsername("non.existent.trainer");
+
+        when(trainerService.getTrainerByUsername("non.existent.trainer")).thenReturn(null);
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> trainingService.getTrainerTrainings(request));
+
+        verify(trainerService, times(1)).getTrainerByUsername("non.existent.trainer");
+        verify(trainingRepository, times(0)).findAllTrainerTrainings(
+                anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    void testGetTrainerTrainings_WithTraineeUsername() {
+        // Arrange
+        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
+        request.setTrainerUsername("trainer.username");
+        request.setTraineeUsername("trainee.username");
+
+        when(trainerService.getTrainerByUsername("trainer.username")).thenReturn(trainerResponseDTO);
+        when(traineeService.getTraineeByUsername("trainee.username")).thenReturn(traineeResponseDTO);
+
+        when(trainingRepository.findAllTrainerTrainings(
+                "trainer.username", "trainee.username", null, null))
+                .thenReturn(Collections.singletonList(training));
+
+        when(traineeService.getTraineeResponseDTO(traineeEntity)).thenReturn(traineeResponseDTO);
+        when(trainerService.getTrainerResponseDTO(trainerEntity)).thenReturn(trainerResponseDTO);
+
+        // Act
+        List<TrainingResponseDTO> result = trainingService.getTrainerTrainings(request);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(traineeService, times(1)).getTraineeByUsername("trainee.username");
+    }
+
+    @Test
+    void testGetTrainerTrainings_TraineeNotFound() {
+        // Arrange
+        GetTrainerTrainingsRequestDTO request = new GetTrainerTrainingsRequestDTO();
+        request.setTrainerUsername("trainer.username");
+        request.setTraineeUsername("non.existent.trainee");
+
+        when(trainerService.getTrainerByUsername("trainer.username")).thenReturn(trainerResponseDTO);
+        when(traineeService.getTraineeByUsername("non.existent.trainee")).thenReturn(null);
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> trainingService.getTrainerTrainings(request));
+
+        verify(trainerService, times(1)).getTrainerByUsername("trainer.username");
+        verify(traineeService, times(1)).getTraineeByUsername("non.existent.trainee");
+        verify(trainingRepository, times(0)).findAllTrainerTrainings(
+                anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    void testAddTraining_Success() {
         // Arrange
         AddTrainingRequestDTO request = new AddTrainingRequestDTO();
-        request.setTraineeUsername("john.doe");
-        request.setTrainerUsername("jane.smith");
+        request.setTraineeUsername("trainee.username");
+        request.setTrainerUsername("trainer.username");
+        request.setTrainingDate(trainingDate);
+        request.setTrainingDuration(60);
+        request.setTrainingName("Morning Run");
+        request.setTrainingTypeName("Cardio");
+
+        // Mock the necessary dependencies
+        when(traineeService.getTraineeEntityByUsername("trainee.username")).thenReturn(traineeEntity);
+        when(trainerService.getTrainerEntityByUsername("trainer.username")).thenReturn(trainerEntity);
+        when(trainingTypeService.findByValue("Cardio")).thenReturn(Optional.of(trainingType));
+        when(trainingRepository.save(any(Training.class))).thenReturn(training);
+        when(traineeService.getTraineeResponseDTO(traineeEntity)).thenReturn(traineeResponseDTO);
+        when(trainerService.getTrainerResponseDTO(trainerEntity)).thenReturn(trainerResponseDTO);
+
+        // Act
+        TrainingResponseDTO result = trainingService.addTraining(request);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("Morning Run", result.getTrainingName());
+        assertEquals("Cardio", result.getTrainingType());
+
+        // Verify interactions
+        verify(traineeService, times(1)).getTraineeEntityByUsername("trainee.username");
+        verify(trainerService, times(1)).getTrainerEntityByUsername("trainer.username");
+        verify(trainingTypeService, times(1)).findByValue("Cardio");
+        verify(trainingRepository, times(1)).save(any(Training.class));
+        verify(traineeTrainerService, times(1)).createTraineeTrainer("trainee.username", "trainer.username");
+    }
+
+    @Test
+    void testAddTraining_InvalidTraineeUsername() {
+        // Arrange
+        AddTrainingRequestDTO request = new AddTrainingRequestDTO();
+        request.setTraineeUsername("");
+        request.setTrainerUsername("trainer.username");
+        request.setTrainingDate(trainingDate);
+        request.setTrainingDuration(60);
+        request.setTrainingName("Morning Run");
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(request));
+
+        verify(traineeService, times(0)).getTraineeEntityByUsername(anyString());
+        verify(trainerService, times(0)).getTrainerEntityByUsername(anyString());
+        verify(trainingTypeService, times(0)).findByValue(anyString());
+        verify(trainingRepository, times(0)).save(any(Training.class));
+        verify(traineeTrainerService, times(0)).createTraineeTrainer(anyString(), anyString());
+    }
+
+    @Test
+    void testAddTraining_InvalidTrainerUsername() {
+        // Arrange
+        AddTrainingRequestDTO request = new AddTrainingRequestDTO();
+        request.setTraineeUsername("trainee.username");
+        request.setTrainerUsername("");
+        request.setTrainingDate(trainingDate);
+        request.setTrainingDuration(60);
+        request.setTrainingName("Morning Run");
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(request));
+
+        verify(traineeService, times(0)).getTraineeEntityByUsername(anyString());
+        verify(trainerService, times(0)).getTrainerEntityByUsername(anyString());
+        verify(trainingTypeService, times(0)).findByValue(anyString());
+        verify(trainingRepository, times(0)).save(any(Training.class));
+        verify(traineeTrainerService, times(0)).createTraineeTrainer(anyString(), anyString());
+    }
+
+    @Test
+    void testAddTraining_TrainingDateNull() {
+        // Arrange
+        AddTrainingRequestDTO request = new AddTrainingRequestDTO();
+        request.setTraineeUsername("trainee.username");
+        request.setTrainerUsername("trainer.username");
         request.setTrainingDate(null);
+        request.setTrainingDuration(60);
+        request.setTrainingName("Morning Run");
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(request));
+
+        verify(traineeService, times(0)).getTraineeEntityByUsername(anyString());
+        verify(trainerService, times(0)).getTrainerEntityByUsername(anyString());
     }
 
     @Test
-    public void testAddTraining_NullTrainingDuration() {
+    void testAddTraining_TrainingDurationNull() {
         // Arrange
         AddTrainingRequestDTO request = new AddTrainingRequestDTO();
-        request.setTraineeUsername("john.doe");
-        request.setTrainerUsername("jane.smith");
-        request.setTrainingDate(new Date());
+        request.setTraineeUsername("trainee.username");
+        request.setTrainerUsername("trainer.username");
+        request.setTrainingDate(trainingDate);
         request.setTrainingDuration(null);
+        request.setTrainingName("Morning Run");
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(request));
+
+        verify(traineeService, times(0)).getTraineeEntityByUsername(anyString());
+        verify(trainerService, times(0)).getTrainerEntityByUsername(anyString());
     }
 
     @Test
-    public void testAddTraining_TraineeNotFound() {
+    void testAddTraining_TraineeNotFound() {
         // Arrange
         AddTrainingRequestDTO request = new AddTrainingRequestDTO();
-        request.setTraineeUsername("nonexistent.trainee");
-        request.setTrainerUsername("jane.smith");
-        request.setTrainingDate(new Date());
+        request.setTraineeUsername("non.existent.trainee");
+        request.setTrainerUsername("trainer.username");
+        request.setTrainingDate(trainingDate);
         request.setTrainingDuration(60);
-        request.setTrainingName("Test Training");
+        request.setTrainingName("Morning Run");
+        request.setTrainingTypeName("Cardio");
 
-        when(traineeService.getTraineeByUsername("nonexistent.trainee")).thenReturn(null);
+        when(traineeService.getTraineeEntityByUsername("non.existent.trainee")).thenReturn(null);
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(request));
+
+        verify(traineeService, times(1)).getTraineeEntityByUsername("non.existent.trainee");
+        verify(trainerService, times(0)).getTrainerEntityByUsername(anyString());
+        verify(trainingTypeService, times(0)).findByValue(anyString());
     }
 
     @Test
-    public void testAddTraining_TrainerNotFound() {
+    void testAddTraining_TrainerNotFound() {
         // Arrange
         AddTrainingRequestDTO request = new AddTrainingRequestDTO();
-        request.setTraineeUsername("john.doe");
-        request.setTrainerUsername("nonexistent.trainer");
-        request.setTrainingDate(new Date());
+        request.setTraineeUsername("trainee.username");
+        request.setTrainerUsername("non.existent.trainer");
+        request.setTrainingDate(trainingDate);
         request.setTrainingDuration(60);
-        request.setTrainingName("Test Training");
+        request.setTrainingName("Morning Run");
+        request.setTrainingTypeName("Cardio");
 
-        when(traineeService.getTraineeByUsername("john.doe")).thenReturn(trainee);
-        when(trainerService.getTrainerByUsername("nonexistent.trainer")).thenReturn(null);
+        when(traineeService.getTraineeEntityByUsername("trainee.username")).thenReturn(traineeEntity);
+        when(trainerService.getTrainerEntityByUsername("non.existent.trainer")).thenReturn(null);
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(request));
+
+        verify(traineeService, times(1)).getTraineeEntityByUsername("trainee.username");
+        verify(trainerService, times(1)).getTrainerEntityByUsername("non.existent.trainer");
+        verify(trainingTypeService, times(0)).findByValue(anyString());
     }
 
     @Test
-    public void testAddTraining_InvalidTrainingType() {
+    void testAddTraining_InvalidTrainingType() {
         // Arrange
         AddTrainingRequestDTO request = new AddTrainingRequestDTO();
-        request.setTraineeUsername("john.doe");
-        request.setTrainerUsername("jane.smith");
-        request.setTrainingDate(new Date());
+        request.setTraineeUsername("trainee.username");
+        request.setTrainerUsername("trainer.username");
+        request.setTrainingDate(trainingDate);
         request.setTrainingDuration(60);
-        request.setTrainingName("Test Training");
-        request.setTrainingTypeName("Invalid");
+        request.setTrainingName("Morning Run");
+        request.setTrainingTypeName("InvalidType");
 
-        when(traineeService.getTraineeByUsername("john.doe")).thenReturn(trainee);
-        when(trainerService.getTrainerByUsername("jane.smith")).thenReturn(trainer);
-        when(trainingTypeService.findByValue("Invalid")).thenReturn(Optional.empty());
+        when(traineeService.getTraineeEntityByUsername("trainee.username")).thenReturn(traineeEntity);
+        when(trainerService.getTrainerEntityByUsername("trainer.username")).thenReturn(trainerEntity);
+        when(trainingTypeService.findByValue("InvalidType")).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(request));
+
+        verify(traineeService, times(1)).getTraineeEntityByUsername("trainee.username");
+        verify(trainerService, times(1)).getTrainerEntityByUsername("trainer.username");
+        verify(trainingTypeService, times(1)).findByValue("InvalidType");
+        verify(trainingRepository, times(0)).save(any(Training.class));
+        verify(traineeTrainerService, times(0)).createTraineeTrainer(anyString(), anyString());
     }
 }

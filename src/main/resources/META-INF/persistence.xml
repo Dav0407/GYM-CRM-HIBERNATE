@@ -18,15 +18,23 @@
 
         <properties>
             <property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver"/>
-            <property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/gym_app"/>
-            <property name="jakarta.persistence.jdbc.user" value="postgres"/>
-            <property name="jakarta.persistence.jdbc.password" value="123"/>
+            <property name="javax.persistence.jdbc.url" value="${DB_URL}"/>
+            <property name="javax.persistence.jdbc.user" value="${DB_USER}"/>
+            <property name="javax.persistence.jdbc.password" value="${DB_PASSWORD}"/>
 
             <!-- Hibernate Properties -->
             <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL10Dialect"/>
-            <property name="hibernate.hbm2ddl.auto" value="create"/>
+            <property name="hibernate.hbm2ddl.auto" value="create" />
+            <property name="jakarta.persistence.sql-load-script-source" value="META-INF/import.sql" />
+
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
+
+            <!-- Enable Database Initialization -->
+           <!-- <property name="jakarta.persistence.schema-generation.scripts.action" value="create"/>
+            <property name="jakarta.persistence.schema-generation.scripts.create-target" value="META-INF/import.sql"/>
+            <property name="jakarta.persistence.sql-load-script-source" value="META-INF/import.sql"/>-->
         </properties>
+
     </persistence-unit>
 </persistence>

@@ -1,21 +1,27 @@
-package com.epam.gym_crm.dto;
+package com.epam.gym_crm.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.Date;
 
 @Getter
 @Setter
+@ToString
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateTraineeProfileRequestDTO {
+public class TraineeResponseDTO {
+    private Long id;
     private String firstName;
     private String lastName;
-    private Date dateOfBirth;
+    private String username;
+    private String password;
+    private Boolean isActive;
+    private Date birthDate;
     private String address;
 }

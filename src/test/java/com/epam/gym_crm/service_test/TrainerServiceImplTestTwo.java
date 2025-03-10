@@ -1,14 +1,15 @@
 package com.epam.gym_crm.service_test;
 
-import com.epam.gym_crm.dto.CreateTrainerProfileRequestDTO;
-import com.epam.gym_crm.dto.UpdateTrainerProfileRequestDTO;
+import com.epam.gym_crm.dto.request.CreateTrainerProfileRequestDTO;
+import com.epam.gym_crm.dto.request.UpdateTrainerProfileRequestDTO;
+import com.epam.gym_crm.dto.response.TrainerResponseDTO;
 import com.epam.gym_crm.entity.Trainer;
 import com.epam.gym_crm.entity.TrainingType;
 import com.epam.gym_crm.entity.User;
 import com.epam.gym_crm.repository.TrainerRepository;
 import com.epam.gym_crm.service.TrainingTypeService;
 import com.epam.gym_crm.service.UserService;
-import com.epam.gym_crm.service.service_impl.TrainerServiceImpl;
+import com.epam.gym_crm.service.impl.TrainerServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -92,12 +93,12 @@ public class TrainerServiceImplTestTwo {
         when(trainerRepository.save(any(Trainer.class))).thenReturn(trainer);
 
         // Call the method
-        Trainer createdTrainer = trainerService.createTrainerProfile(createRequest);
+        TrainerResponseDTO createdTrainer = trainerService.createTrainerProfile(createRequest);
 
         // Assertions
         assertNotNull(createdTrainer);
-        assertEquals("john.doe", createdTrainer.getUser().getUsername());
-        assertEquals("Fitness", createdTrainer.getSpecialization().getTrainingTypeName());
+        assertEquals("john.doe", createdTrainer.getUsername());
+        assertEquals("Fitness", createdTrainer.getSpecialization());
         verify(userService, times(1)).generateUsername("John", "Doe");
         verify(userService, times(1)).generateRandomPassword();
         verify(userService, times(1)).saveUser(any(User.class));
@@ -123,7 +124,7 @@ public class TrainerServiceImplTestTwo {
     void testGetTrainerById() {
         when(trainerRepository.findById(1L)).thenReturn(Optional.of(trainer));
 
-        Trainer foundTrainer = trainerService.getTrainerById(1L);
+        TrainerResponseDTO foundTrainer = trainerService.getTrainerById(1L);
 
         assertNotNull(foundTrainer);
         assertEquals(1L, foundTrainer.getId());
@@ -144,7 +145,7 @@ public class TrainerServiceImplTestTwo {
         when(userService.getUserByUsername("john.doe")).thenReturn(user);
         when(trainerRepository.findByUserId(1L)).thenReturn(Optional.of(trainer));
 
-        Trainer foundTrainer = trainerService.getTrainerByUsername("john.doe");
+        TrainerResponseDTO foundTrainer = trainerService.getTrainerByUsername("john.doe");
 
         assertNotNull(foundTrainer);
         assertEquals(1L, foundTrainer.getId());
@@ -178,11 +179,11 @@ public class TrainerServiceImplTestTwo {
         when(trainingTypeService.findByValue("Yoga")).thenReturn(Optional.of(trainingType));
         when(trainerRepository.save(any(Trainer.class))).thenReturn(trainer);
 
-        Trainer updatedTrainer = trainerService.updateTrainerProfile(1L, updateRequest);
+        TrainerResponseDTO updatedTrainer = trainerService.updateTrainerProfile(1L, updateRequest);
 
         assertNotNull(updatedTrainer);
-        assertEquals("Jane", updatedTrainer.getUser().getFirstName());
-        assertEquals("Fitness", updatedTrainer.getSpecialization().getTrainingTypeName());
+        assertEquals("Jane", updatedTrainer.getFirstName());
+        assertEquals("Fitness", updatedTrainer.getSpecialization());
         verify(trainerRepository, times(1)).findById(1L);
         verify(trainingTypeService, times(1)).findByValue("Yoga");
         verify(trainerRepository, times(1)).save(any(Trainer.class));
@@ -212,7 +213,7 @@ public class TrainerServiceImplTestTwo {
     void testGetNotAssignedTrainersByTraineeUsername() {
         when(trainerRepository.findUnassignedTrainersByTraineeUsername("trainee1")).thenReturn(List.of(trainer));
 
-        List<Trainer> unassignedTrainers = trainerService.getNotAssignedTrainersByTraineeUsername("trainee1");
+        List<TrainerResponseDTO> unassignedTrainers = trainerService.getNotAssignedTrainersByTraineeUsername("trainee1");
 
         assertNotNull(unassignedTrainers);
         assertEquals(1, unassignedTrainers.size());

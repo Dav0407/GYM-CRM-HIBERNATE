@@ -1,10 +1,9 @@
-package com.epam.gym_crm.service.service_impl;
+package com.epam.gym_crm.service.impl;
 
-import com.epam.gym_crm.dto.AddTrainingRequestDTO;
-import com.epam.gym_crm.dto.GetTraineeTrainingsRequestDTO;
-import com.epam.gym_crm.dto.GetTrainerTrainingsRequestDTO;
-import com.epam.gym_crm.entity.Trainee;
-import com.epam.gym_crm.entity.Trainer;
+import com.epam.gym_crm.dto.request.AddTrainingRequestDTO;
+import com.epam.gym_crm.dto.request.GetTraineeTrainingsRequestDTO;
+import com.epam.gym_crm.dto.request.GetTrainerTrainingsRequestDTO;
+import com.epam.gym_crm.dto.response.TrainingResponseDTO;
 import com.epam.gym_crm.entity.Training;
 import com.epam.gym_crm.entity.TrainingType;
 import com.epam.gym_crm.repository.TrainingRepository;
@@ -29,6 +28,7 @@ public class TrainingServiceImpl implements TrainingService {
     private static final Log LOG = LogFactory.getLog(TrainingServiceImpl.class);
 
     private final TrainingRepository trainingRepository;
+
     private final TraineeService traineeService;
     private final TrainerService trainerService;
 
@@ -36,7 +36,7 @@ public class TrainingServiceImpl implements TrainingService {
     private final TraineeTrainerService traineeTrainerService;
 
     @Override
-    public List<Training> getTraineeTrainings(GetTraineeTrainingsRequestDTO request) {
+    public List<TrainingResponseDTO> getTraineeTrainings(GetTraineeTrainingsRequestDTO request) {
         LOG.info("Fetching trainings for trainee: {}" + request.getTraineeUsername());
 
         // Validate trainee username
@@ -61,17 +61,20 @@ public class TrainingServiceImpl implements TrainingService {
         }
 
         // Fetch trainings
-        List<Training> trainings = trainingRepository.findAllTraineeTrainings(
-                traineeUsername, trainerUsername, request.getFrom(), request.getTo(), request.getTrainingType());
+        List<TrainingResponseDTO> trainings = trainingRepository.findAllTraineeTrainings(
+                        traineeUsername, trainerUsername, request.getFrom(), request.getTo(), request.getTrainingType())
+                .stream()
+                .map(this::getTrainingDTO)
+                .toList();
 
-        LOG.info("Found " + trainings.size() + " trainings for trainee: " +  traineeUsername);
+        LOG.info("Found " + trainings.size() + " trainings for trainee: " + traineeUsername);
 
         return trainings;
     }
 
 
     @Override
-    public List<Training> getTrainerTrainings(GetTrainerTrainingsRequestDTO request) {
+    public List<TrainingResponseDTO> getTrainerTrainings(GetTrainerTrainingsRequestDTO request) {
         LOG.info("Fetching trainings for trainer: {}" + request.getTrainerUsername());
 
         // Validate trainer username
@@ -101,8 +104,11 @@ public class TrainingServiceImpl implements TrainingService {
         }
 
         // Fetch trainings
-        List<Training> trainings = trainingRepository.findAllTrainerTrainings(
-                trainerUsername, traineeUsername, request.getFrom(), request.getTo());
+        List<TrainingResponseDTO> trainings = trainingRepository.findAllTrainerTrainings(
+                        trainerUsername, traineeUsername, request.getFrom(), request.getTo())
+                .stream()
+                .map(this::getTrainingDTO)
+                .toList();
 
         LOG.info("Found " + trainings.size() + " trainings for trainer: " + trainerUsername);
 
@@ -111,7 +117,7 @@ public class TrainingServiceImpl implements TrainingService {
 
 
     @Override
-    public Training addTraining(AddTrainingRequestDTO request) {
+    public TrainingResponseDTO addTraining(AddTrainingRequestDTO request) {
         LOG.info("Adding new training...");
 
         // Validate input
@@ -134,10 +140,10 @@ public class TrainingServiceImpl implements TrainingService {
         String trainingName = Optional.ofNullable(request.getTrainingName()).orElseThrow(() -> new IllegalArgumentException("Training name cannot be null."));
 
         // Fetch Trainee & Trainer
-        Trainee trainee = Optional.ofNullable(traineeService.getTraineeByUsername(traineeUsername))
+        var trainee = Optional.ofNullable(traineeService.getTraineeEntityByUsername(traineeUsername))
                 .orElseThrow(() -> new IllegalArgumentException("No trainee found with username: " + traineeUsername));
 
-        Trainer trainer = Optional.ofNullable(trainerService.getTrainerByUsername(trainerUsername))
+        var trainer = Optional.ofNullable(trainerService.getTrainerEntityByUsername(trainerUsername))
                 .orElseThrow(() -> new IllegalArgumentException("No trainer found with username: " + trainerUsername));
 
         // Fetch TrainingType
@@ -161,8 +167,19 @@ public class TrainingServiceImpl implements TrainingService {
         traineeTrainerService.createTraineeTrainer(traineeUsername, trainerUsername);
         LOG.info("Trainer-Trainee relation created successfully.");
 
-        return savedTraining;
+        return getTrainingDTO(training);
     }
 
+    private TrainingResponseDTO getTrainingDTO(Training training) {
+        return TrainingResponseDTO.builder()
+                .id(training.getId())
+                .trainee(traineeService.getTraineeResponseDTO(training.getTrainee()))
+                .trainer(trainerService.getTrainerResponseDTO(training.getTrainer()))
+                .trainingName(training.getTrainingName())
+                .trainingType(training.getTrainingType().getTrainingTypeName())
+                .trainingDuration(training.getTrainingDuration())
+                .trainingDate(training.getTrainingDate())
+                .build();
 
+    }
 }

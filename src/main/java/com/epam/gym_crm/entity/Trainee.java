@@ -1,6 +1,7 @@
 package com.epam.gym_crm.entity;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,6 +24,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 @Builder
 @Entity
 @Table(name = "trainees")
@@ -31,6 +33,7 @@ public class Trainee {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "date_of_birth")
     private Date dateOfBirth;
 
     private String address;
@@ -40,5 +43,6 @@ public class Trainee {
     User user;
 
     @OneToMany(mappedBy = "trainee")
+    @ToString.Exclude
     private List<Training> trainings;
 }

@@ -1,4 +1,4 @@
-package com.epam.gym_crm.dto;
+package com.epam.gym_crm.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

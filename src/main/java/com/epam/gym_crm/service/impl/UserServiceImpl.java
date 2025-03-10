@@ -1,4 +1,4 @@
-package com.epam.gym_crm.service.service_impl;
+package com.epam.gym_crm.service.impl;
 
 import com.epam.gym_crm.entity.User;
 import com.epam.gym_crm.repository.UserRepository;

@@ -1,17 +1,20 @@
 package com.epam.gym_crm.service;
 
-import com.epam.gym_crm.dto.CreateTrainerProfileRequestDTO;
-import com.epam.gym_crm.dto.UpdateTrainerProfileRequestDTO;
+import com.epam.gym_crm.dto.request.CreateTrainerProfileRequestDTO;
+import com.epam.gym_crm.dto.request.UpdateTrainerProfileRequestDTO;
+import com.epam.gym_crm.dto.response.TrainerResponseDTO;
 import com.epam.gym_crm.entity.Trainer;
 
 import java.util.List;
 
 public interface TrainerService {
-    Trainer createTrainerProfile(CreateTrainerProfileRequestDTO request);
-    Trainer getTrainerById(Long id);
-    Trainer getTrainerByUsername(String username);
+    TrainerResponseDTO createTrainerProfile(CreateTrainerProfileRequestDTO request);
+    TrainerResponseDTO getTrainerById(Long id);
+    TrainerResponseDTO getTrainerByUsername(String username);
+    Trainer getTrainerEntityByUsername(String username);
     void changePassword(String username, String oldPassword, String newPassword);
-    Trainer updateTrainerProfile(Long id, UpdateTrainerProfileRequestDTO request);
+    TrainerResponseDTO updateTrainerProfile(Long id, UpdateTrainerProfileRequestDTO request);
     void updateStatus(String username);
-    List<Trainer> getNotAssignedTrainersByTraineeUsername(String traineeUsername);
+    List<TrainerResponseDTO> getNotAssignedTrainersByTraineeUsername(String traineeUsername);
+    TrainerResponseDTO getTrainerResponseDTO(Trainer trainer);
 }

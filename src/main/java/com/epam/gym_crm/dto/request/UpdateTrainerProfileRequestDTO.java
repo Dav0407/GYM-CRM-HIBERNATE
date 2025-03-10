@@ -1,4 +1,4 @@
-package com.epam.gym_crm.dto;
+package com.epam.gym_crm.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,8 +11,9 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateTrainerProfileRequestDTO {
+public class UpdateTrainerProfileRequestDTO {
     private String firstName;
     private String lastName;
-    private String trainingType;
+    private String username;
+    private String trainingTypeName;
 }

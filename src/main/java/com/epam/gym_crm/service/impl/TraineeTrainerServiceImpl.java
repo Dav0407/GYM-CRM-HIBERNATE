@@ -1,4 +1,4 @@
-package com.epam.gym_crm.service.service_impl;
+package com.epam.gym_crm.service.impl;
 
 import com.epam.gym_crm.entity.Trainee;
 import com.epam.gym_crm.entity.TraineeTrainer;
@@ -44,8 +44,8 @@ public class TraineeTrainerServiceImpl implements TraineeTrainerService {
         }
 
         // Retrieve trainee and trainer
-        Trainee trainee = traineeService.getTraineeByUsername(traineeUsername);
-        Trainer trainer = trainerService.getTrainerByUsername(trainerUsername);
+        Trainee trainee = traineeService.getTraineeEntityByUsername(traineeUsername);
+        Trainer trainer = trainerService.getTrainerEntityByUsername(trainerUsername);
 
         // Check if relationship already exists
         Optional<TraineeTrainer> existingRelation = traineeTrainerRepository.findByTraineeAndTrainer(trainee, trainer);
@@ -87,7 +87,7 @@ public class TraineeTrainerServiceImpl implements TraineeTrainerService {
         LOG.info("Updating trainers list for trainee: {}" + traineeUsername);
 
         // Fetch the trainee
-        Trainee trainee = traineeService.getTraineeByUsername(traineeUsername);
+        Trainee trainee = traineeService.getTraineeEntityByUsername(traineeUsername);
         if (trainee == null) {
             throw new IllegalArgumentException("Trainee not found: " + traineeUsername);
         }
@@ -99,7 +99,7 @@ public class TraineeTrainerServiceImpl implements TraineeTrainerService {
         // Add new trainer relationships
         List<TraineeTrainer> newRelations = trainerUsernames.stream()
                 .map(trainerUsername -> {
-                    Trainer trainer = trainerService.getTrainerByUsername(trainerUsername);
+                    Trainer trainer = trainerService.getTrainerEntityByUsername(trainerUsername);
                     if (trainer == null) {
                         LOG.warn("Trainer not found: {}" + trainerUsername);
                         return null;

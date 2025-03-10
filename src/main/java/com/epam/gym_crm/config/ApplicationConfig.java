@@ -1,6 +1,8 @@
 package com.epam.gym_crm.config;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.persistence.EntityManagerFactory;
+import lombok.Getter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -15,16 +17,19 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import javax.sql.DataSource;
 import java.util.Properties;
 
+@Getter
 @Configuration
 @EnableTransactionManagement
 @ComponentScan("com.epam.gym_crm")
 @PropertySource("classpath:application.properties")
 public class ApplicationConfig {
 
+    private final Dotenv dotenv = Dotenv.load();
+
     @Bean
     public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName("org.postgresql.Driver"); // Change for PostgreSQL if needed
+        dataSource.setDriverClassName("org.postgresql.Driver");
         dataSource.setUrl("jdbc:postgresql://localhost:5432/gym_app");
         dataSource.setUsername("postgres");
         dataSource.setPassword("123");

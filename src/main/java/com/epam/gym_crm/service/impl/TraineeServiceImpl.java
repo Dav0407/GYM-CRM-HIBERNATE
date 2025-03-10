@@ -1,18 +1,18 @@
-package com.epam.gym_crm.service.service_impl;
+package com.epam.gym_crm.service.impl;
 
-import com.epam.gym_crm.dto.CreateTraineeProfileRequestDTO;
-import com.epam.gym_crm.dto.UpdateTraineeProfileRequestDTO;
+import com.epam.gym_crm.dto.request.CreateTraineeProfileRequestDTO;
+import com.epam.gym_crm.dto.request.UpdateTraineeProfileRequestDTO;
+import com.epam.gym_crm.dto.response.TraineeResponseDTO;
 import com.epam.gym_crm.entity.Trainee;
 import com.epam.gym_crm.entity.User;
 import com.epam.gym_crm.repository.TraineeRepository;
 import com.epam.gym_crm.service.TraineeService;
 import com.epam.gym_crm.service.UserService;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 @Service
@@ -26,7 +26,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Transactional
     @Override
-    public Trainee createTraineeProfile(CreateTraineeProfileRequestDTO request) {
+    public TraineeResponseDTO createTraineeProfile(CreateTraineeProfileRequestDTO request) {
         LOG.info("Creating new trainee profile for: " + request.getFirstName() + " " + request.getLastName());
 
         validateRequest(request);
@@ -50,20 +50,36 @@ public class TraineeServiceImpl implements TraineeService {
 
         Trainee savedTrainee = traineeRepository.save(trainee);
 
-        LOG.info("Trainee profile created successfully: " + savedTrainee);
-        return savedTrainee;
+        LOG.info("Trainee profile created successfully: " + savedTrainee.toString());
+        return getTraineeResponseDTO(trainee);
     }
 
     @Override
-    public Trainee getTraineeById(Long id) {
+    public TraineeResponseDTO getTraineeById(Long id) {
+
         LOG.info("Fetching trainee by ID: " + id);
-        return traineeRepository.findById(id)
+
+        Trainee trainee = traineeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Trainee not found with ID: " + id));
+
+        return getTraineeResponseDTO(trainee);
     }
 
     @Override
-    public Trainee getTraineeByUsername(String username) {
+    public TraineeResponseDTO getTraineeByUsername(String username) {
+
         User userByUsername = userService.getUserByUsername(username);
+
+        Trainee trainee = traineeRepository.findByUserId(userByUsername.getId())
+                .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + userByUsername.getUsername()));
+
+        return getTraineeResponseDTO(trainee);
+    }
+
+    @Override
+    public Trainee getTraineeEntityByUsername(String username) {
+        User userByUsername = userService.getUserByUsername(username);
+
         return traineeRepository.findByUserId(userByUsername.getId())
                 .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + userByUsername.getUsername()));
     }
@@ -75,7 +91,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Transactional
     @Override
-    public Trainee updateTraineeProfile(Long id, UpdateTraineeProfileRequestDTO request) {
+    public TraineeResponseDTO updateTraineeProfile(Long id, UpdateTraineeProfileRequestDTO request) {
         Trainee trainee = traineeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Trainee not found with ID: " + id));
 
@@ -85,7 +101,7 @@ public class TraineeServiceImpl implements TraineeService {
         trainee.setDateOfBirth(request.getDateOfBirth());
         trainee.setAddress(request.getAddress().trim());
 
-        return trainee;
+        return getTraineeResponseDTO(trainee);
     }
 
     @Override
@@ -108,5 +124,18 @@ public class TraineeServiceImpl implements TraineeService {
         if (request.getDateOfBirth() == null) {
             throw new IllegalArgumentException("Date of birth is required");
         }
+    }
+
+    public TraineeResponseDTO getTraineeResponseDTO(Trainee trainee) {
+        return TraineeResponseDTO.builder()
+                .id(trainee.getId())
+                .firstName(trainee.getUser().getFirstName())
+                .lastName(trainee.getUser().getLastName())
+                .username(trainee.getUser().getUsername())
+                .password(trainee.getUser().getPassword())
+                .isActive(trainee.getUser().getIsActive())
+                .birthDate(trainee.getDateOfBirth())
+                .address(trainee.getAddress())
+                .build();
     }
 }
