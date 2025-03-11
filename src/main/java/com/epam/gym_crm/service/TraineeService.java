@@ -5,7 +5,7 @@ import com.epam.gym_crm.dto.request.UpdateTraineeProfileRequestDTO;
 import com.epam.gym_crm.dto.response.TraineeResponseDTO;
 import com.epam.gym_crm.entity.Trainee;
 
-public interface TraineeService {
+public interface TraineeService extends UserCreationService{
     TraineeResponseDTO createTraineeProfile(CreateTraineeProfileRequestDTO request);
     TraineeResponseDTO getTraineeById(Long id);
     TraineeResponseDTO getTraineeByUsername(String username);

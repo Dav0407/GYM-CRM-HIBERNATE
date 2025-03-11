@@ -35,16 +35,7 @@ public class TrainerServiceImpl implements TrainerService {
 
         validateRequest(request);
 
-        User user = User.builder()
-                .firstName(request.getFirstName().trim())
-                .lastName(request.getLastName().trim())
-                .username(userService.generateUsername(request.getFirstName(), request.getLastName()))
-                .password(userService.generateRandomPassword())
-                .isActive(true)
-                .build();
-
-        user = userService.saveUser(user);
-        LOG.info("User created successfully: " + user.toString());
+        User user = createUser(request.getFirstName(), request.getLastName());
 
         Trainer trainer = Trainer.builder()
                 .specialization(trainingTypeService.findByValue(request.getTrainingType())
@@ -157,5 +148,10 @@ public class TrainerServiceImpl implements TrainerService {
                 .isActive(trainer.getUser().getIsActive())
                 .specialization(trainer.getSpecialization().getTrainingTypeName())
                 .build();
+    }
+
+    @Override
+    public UserService getUserService() {
+        return userService;
     }
 }

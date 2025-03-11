@@ -7,7 +7,7 @@ import com.epam.gym_crm.entity.Trainer;
 
 import java.util.List;
 
-public interface TrainerService {
+public interface TrainerService extends UserCreationService{
     TrainerResponseDTO createTrainerProfile(CreateTrainerProfileRequestDTO request);
     TrainerResponseDTO getTrainerById(Long id);
     TrainerResponseDTO getTrainerByUsername(String username);
