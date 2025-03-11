@@ -92,7 +92,6 @@ public class TraineeServiceImpl implements TraineeService {
 
         trainee.getUser().setFirstName(request.getFirstName().trim());
         trainee.getUser().setLastName(request.getLastName().trim());
-        trainee.getUser().setUsername(request.getUsername().trim());
         trainee.setDateOfBirth(request.getDateOfBirth());
         trainee.setAddress(request.getAddress().trim());
 

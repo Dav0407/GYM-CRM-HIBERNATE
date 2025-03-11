@@ -42,7 +42,11 @@ public class Trainee {
     @JoinColumn(name = "user_id")
     User user;
 
-    @OneToMany(mappedBy = "trainee")
+    @OneToMany(mappedBy = "trainee", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<Training> trainings;
+
+    @OneToMany(mappedBy = "trainee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    private List<TraineeTrainer> traineeTrainers;
 }

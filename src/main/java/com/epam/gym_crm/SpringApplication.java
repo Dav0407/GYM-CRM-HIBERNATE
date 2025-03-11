@@ -369,15 +369,11 @@ public class SpringApplication {
         System.out.println("Enter new last name: ");
         String lastName = SCANNER.nextLine();
 
-        System.out.println("Enter new username: ");
-        String username = SCANNER.nextLine();
-
         String specialization = readTrainingType();
 
         UpdateTrainerProfileRequestDTO request = UpdateTrainerProfileRequestDTO.builder()
                 .firstName(firstName)
                 .lastName(lastName)
-                .username(username)
                 .trainingTypeName(specialization)
                 .build();
 
@@ -397,9 +393,6 @@ public class SpringApplication {
         System.out.println("Enter your new last name: ");
         String lastName = SCANNER.nextLine();
 
-        System.out.println("Enter your new username: ");
-        String username = SCANNER.nextLine();
-
         Date dateOfBirth = readDate("Enter date of birth (yyyy-MM-dd): ");
 
         System.out.println("Enter your new address: ");
@@ -408,7 +401,6 @@ public class SpringApplication {
         UpdateTraineeProfileRequestDTO request = UpdateTraineeProfileRequestDTO.builder()
                 .firstName(firstName)
                 .lastName(lastName)
-                .username(username)
                 .dateOfBirth(dateOfBirth)
                 .address(address)
                 .build();

@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class TrainerServiceImplTestTwo {
+public class TrainerServiceImplTest {
 
     @Mock
     private TrainerRepository trainerRepository;
