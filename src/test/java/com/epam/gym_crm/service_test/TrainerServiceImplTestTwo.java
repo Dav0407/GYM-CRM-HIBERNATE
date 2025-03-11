@@ -165,15 +165,6 @@ public class TrainerServiceImplTestTwo {
     }
 
     @Test
-    void testChangePassword() {
-        doNothing().when(userService).changePassword("john.doe", "oldPassword", "newPassword");
-
-        trainerService.changePassword("john.doe", "oldPassword", "newPassword");
-
-        verify(userService, times(1)).changePassword("john.doe", "oldPassword", "newPassword");
-    }
-
-    @Test
     void testUpdateTrainerProfile() {
         when(trainerRepository.findById(1L)).thenReturn(Optional.of(trainer));
         when(trainingTypeService.findByValue("Yoga")).thenReturn(Optional.of(trainingType));

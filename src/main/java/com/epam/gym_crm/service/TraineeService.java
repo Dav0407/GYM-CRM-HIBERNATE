@@ -10,7 +10,6 @@ public interface TraineeService {
     TraineeResponseDTO getTraineeById(Long id);
     TraineeResponseDTO getTraineeByUsername(String username);
     Trainee getTraineeEntityByUsername(String username);
-    void changePassword(String username, String oldPassword, String newPassword);
     TraineeResponseDTO updateTraineeProfile(Long id, UpdateTraineeProfileRequestDTO request);
     void updateStatus(String username);
     void deleteTraineeProfileByUsername(String username);

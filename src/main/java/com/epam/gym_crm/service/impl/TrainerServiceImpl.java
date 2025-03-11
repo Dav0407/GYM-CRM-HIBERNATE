@@ -89,11 +89,6 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
-    public void changePassword(String username, String oldPassword, String newPassword) {
-        userService.changePassword(username, oldPassword, newPassword);
-    }
-
-    @Override
     public TrainerResponseDTO updateTrainerProfile(Long id, UpdateTrainerProfileRequestDTO request) {
 
         Trainer trainer = trainerRepository.findById(id).orElseThrow(() -> new RuntimeException("Trainer not found with ID: " + id));

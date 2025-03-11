@@ -12,7 +12,6 @@ public interface TrainerService {
     TrainerResponseDTO getTrainerById(Long id);
     TrainerResponseDTO getTrainerByUsername(String username);
     Trainer getTrainerEntityByUsername(String username);
-    void changePassword(String username, String oldPassword, String newPassword);
     TrainerResponseDTO updateTrainerProfile(Long id, UpdateTrainerProfileRequestDTO request);
     void updateStatus(String username);
     List<TrainerResponseDTO> getNotAssignedTrainersByTraineeUsername(String traineeUsername);

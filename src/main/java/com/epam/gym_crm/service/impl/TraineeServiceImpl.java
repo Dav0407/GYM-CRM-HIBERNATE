@@ -84,11 +84,6 @@ public class TraineeServiceImpl implements TraineeService {
                 .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + userByUsername.getUsername()));
     }
 
-    @Override
-    public void changePassword(String username, String oldPassword, String newPassword) {
-        userService.changePassword(username, oldPassword, newPassword);
-    }
-
     @Transactional
     @Override
     public TraineeResponseDTO updateTraineeProfile(Long id, UpdateTraineeProfileRequestDTO request) {
