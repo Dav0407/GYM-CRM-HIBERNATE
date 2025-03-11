@@ -88,22 +88,21 @@ public class TrainerServiceImpl implements TrainerService {
                 .orElseThrow(() -> new RuntimeException("Trainer not found with username: " + userByUsername.getUsername()));
     }
 
+    @Transactional
     @Override
     public TrainerResponseDTO updateTrainerProfile(Long id, UpdateTrainerProfileRequestDTO request) {
 
-        Trainer trainer = trainerRepository.findById(id).orElseThrow(() -> new RuntimeException("Trainer not found with ID: " + id));
+        Trainer trainer = trainerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Trainer not found with ID: " + id));
 
         trainer.getUser().setFirstName(request.getFirstName().trim());
         trainer.getUser().setLastName(request.getLastName().trim());
-        trainer.getUser().setUsername(request.getUsername().trim());
 
         trainer.setSpecialization(
                 trainingTypeService.findByValue(
                                 request.getTrainingTypeName())
                         .orElseThrow(() -> new RuntimeException("Training type not found: " + request.getTrainingTypeName())
                         ));
-
-        trainer = trainerRepository.save(trainer);
 
         return getTrainerResponseDTO(trainer);
     }

@@ -152,7 +152,7 @@ public class SpringApplication {
                     switchStatus("trainer", trainer.getUsername());
                     trainer = fetchUpdatedTrainer(trainer.getUsername()); // Refresh trainer object
                 }
-                case 5 -> getUnassignedTrainers(trainer);
+                case 5 -> getUnassignedTrainers();
                 case 6 -> {
                     addTraining(trainer);
                     trainer = fetchUpdatedTrainer(trainer.getUsername()); // Refresh trainer object
@@ -180,7 +180,8 @@ public class SpringApplication {
             System.out.println("5. Delete trainee profile by username.");
             System.out.println("6. Get trainee training list.");
             System.out.println("7. Update trainers list");
-            System.out.println("8. Log out");
+            System.out.println("8. Get unassigned trainers by trainee's username");
+            System.out.println("9. Log out");
             System.out.print("Enter your choice: ");
 
             int choice = getUserChoice();
@@ -208,7 +209,8 @@ public class SpringApplication {
                     updateTrainersList(trainee);
                     trainee = fetchUpdatedTrainee(trainee.getUsername()); // Refresh trainee object
                 }
-                case 8 -> loggedIn = false;
+                case 8 -> getUnassignedTrainers();
+                case 9 -> loggedIn = false;
                 default -> System.out.println("Invalid choice.");
             }
         }
@@ -354,8 +356,12 @@ public class SpringApplication {
         System.out.println("Training added successfully.");
     }
 
-    private static void getUnassignedTrainers(TrainerResponseDTO trainer) {
-        List<TrainerResponseDTO> list = trainerService.getNotAssignedTrainersByTraineeUsername(trainer.getUsername());
+    private static void getUnassignedTrainers() {
+
+        System.out.println("Enter your trainee username: ");
+        String traineeUsername = SCANNER.nextLine();
+
+        List<TrainerResponseDTO> list = trainerService.getNotAssignedTrainersByTraineeUsername(traineeUsername);
         for (int i = 0; i < list.size(); i++) {
             System.out.println("Trainer " + i + ": " + list.get(i));
         }

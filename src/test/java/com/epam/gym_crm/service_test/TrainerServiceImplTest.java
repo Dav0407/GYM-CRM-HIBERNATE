@@ -168,7 +168,6 @@ public class TrainerServiceImplTest {
     void testUpdateTrainerProfile() {
         when(trainerRepository.findById(1L)).thenReturn(Optional.of(trainer));
         when(trainingTypeService.findByValue("Yoga")).thenReturn(Optional.of(trainingType));
-        when(trainerRepository.save(any(Trainer.class))).thenReturn(trainer);
 
         TrainerResponseDTO updatedTrainer = trainerService.updateTrainerProfile(1L, updateRequest);
 
@@ -177,7 +176,6 @@ public class TrainerServiceImplTest {
         assertEquals("Fitness", updatedTrainer.getSpecialization());
         verify(trainerRepository, times(1)).findById(1L);
         verify(trainingTypeService, times(1)).findByValue("Yoga");
-        verify(trainerRepository, times(1)).save(any(Trainer.class));
     }
 
     @Test
